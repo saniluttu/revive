@@ -621,5 +621,11 @@
     "preparing": "Preparing PDF…",
     "pdfHint": "For the doctor — in English",
     "pdfFailed": "Couldn't make the PDF. Please try again."
+  },
+  "crash": {
+    "title": "Sorry, this page didn't load",
+    "text": "Something went wrong on this page. The rest of the app still works.",
+    "retry": "Try again",
+    "details": "Error details"
   }
 }

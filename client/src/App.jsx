@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import RequireRole from './auth/RequireRole.jsx'
 import useAuth from './auth/useAuth.js'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 import Layout from './components/Layout.jsx'
 import CaregiverDashboard from './pages/CaregiverDashboard.jsx'
 import Chatbot from './pages/Chatbot.jsx'
@@ -42,7 +43,7 @@ export default function App() {
           <Route path="/summary" element={<SessionSummary />} />
           <Route path="/progress" element={<Progress />} />
           <Route path="/reminders" element={<Reminders />} />
-          <Route path="/chat" element={<Chatbot />} />
+          <Route path="/chat" element={<ErrorBoundary><Chatbot /></ErrorBoundary>} />
           <Route path="/prescription" element={<Prescription />} />
         </Route>
 

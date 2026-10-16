@@ -158,6 +158,7 @@ export default function Chatbot() {
   }
 
   const busy = status === 'transcribing' || status === 'thinking'
+  const suggestions = [t('chat.suggestions', { returnObjects: true })].flat().filter((q) => typeof q === 'string')
   const recording = status === 'recording'
 
   return (
@@ -172,7 +173,7 @@ export default function Chatbot() {
           <div className="space-y-3">
             <p className="text-lg text-slate-600">{t('chat.tryAsking')}</p>
             <div className="flex flex-wrap gap-2">
-              {t('chat.suggestions', { returnObjects: true }).map((q) => (
+              {suggestions.map((q) => (
                 <button key={q} type="button" className="rounded-full bg-white px-4 py-2 text-lg font-semibold text-brand-800 ring-2 ring-brand-100 hover:bg-brand-50" onClick={() => ask(q)}>
                   {q}
                 </button>
