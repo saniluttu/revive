@@ -611,5 +611,15 @@
     "answeredBy": "Answered by {{name}}",
     "redFlagTitle": "Important",
     "spoken": "Spoken question"
+  },
+  "caregiver": {
+    "doneToday": "✓ Exercised today",
+    "notDoneToday": "Not yet today",
+    "noSession24h": "No exercise session in the last 24 hours",
+    "noSessionYet": "No exercise session yet",
+    "downloadPdf": "Download report (PDF)",
+    "preparing": "Preparing PDF…",
+    "pdfHint": "For the doctor — in English",
+    "pdfFailed": "Couldn't make the PDF. Please try again."
   }
 }

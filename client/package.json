@@ -20,6 +20,7 @@
     "@react-three/fiber": "^9.8.2",
     "firebase": "^13.0.0",
     "i18next": "^25.10.10",
+    "jspdf": "^3.0.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-i18next": "^15.7.4",

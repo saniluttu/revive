@@ -9,7 +9,7 @@
 // accepted straight away; the patient sees their caregivers on Home and can remove one.
 // The security rules check the code when the link is created (see firestore.rules).
 
-import { collection, doc, getDoc, onSnapshot, query, setDoc, deleteDoc, where, writeBatch } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, query, setDoc, where, writeBatch } from 'firebase/firestore'
 import { db } from '../lib/firebase.js'
 
 // No 0/O, 1/I/L: easy to read out over the phone
@@ -145,4 +145,20 @@ export function watchLinks(uid, as, onChange, onError = () => {}) {
  */
 export function watchPlan(patientUid, onChange, onError = () => {}) {
   return onSnapshot(doc(db, 'plans', patientUid), (snap) => onChange(snap.exists() ? snap.data() : null), onError)
+}
+
+/**
+ * What a linked caregiver's PDF needs about the patient: users/{uid} and the
+ * latest analysed report (rules: readable once linked). Either may be null.
+ */
+export async function getPatientRecord(patientUid) {
+  const [userSnap, reportsSnap] = await Promise.all([
+    getDoc(doc(db, 'users', patientUid)),
+    getDocs(query(collection(db, 'reports'), where('patientUid', '==', patientUid))),
+  ])
+  const reports = reportsSnap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((r) => r.analysis)
+    .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
+  return { user: userSnap.exists() ? userSnap.data() : null, report: reports[0] ?? null }
 }
