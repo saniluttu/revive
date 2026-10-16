@@ -92,7 +92,7 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
   let message = null // { message, kind, until }
   // strict mode: the arm must rest still before a rep can start
   const strict = exercise.strict ?? null
-  let restAnchor = null // { t, lo, hi } while the arm is down and the angle stays within restStillDeg
+  let restAnchor = null // { t, lo, hi } while the arm is down and the angle stays within stillDeg
   let armed = false // rested long enough for the next rep
   let lastRestT = 0 // last frame with the arm down
   let lastReject = null // most recent reason a rep was not counted (debug overlay)
@@ -119,7 +119,8 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
       crossStreaks: {}, // blockAtTarget faults already starting when the target was crossed
       voidReason: null,
       lastRestT, // the up phase is timed from here
-      holdMs: 0, // time at or above the target
+      holdMs: 0, // time at or above the target (strict: longest still stretch there)
+      holdAnchor: null, // strict: { t, lo, hi } while at the top and still
       lastTopT: null, // the down phase is timed from here
       trend: { dir: 'up', extreme: value }, // turning points beyond jitterDeg
       peaks: 0,
@@ -150,9 +151,10 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
     rep.lastT = t
     rep.peak = Math.max(rep.peak, value)
     if (value >= target) {
-      if (rep.lastTopT != null) rep.holdMs += dt
+      if (strict) trackHold(t)
+      else if (rep.lastTopT != null) rep.holdMs += dt
       rep.lastTopT = t
-    }
+    } else rep.holdAnchor = null
     if (Math.abs(value - rep.lastSample) >= deadband) {
       rep.path += Math.abs(value - rep.lastSample)
       rep.lastSample = value
@@ -179,6 +181,18 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
       activeFaults.push('tooHigh')
       voidRep('tooHigh', t)
     }
+  }
+
+  // A hold is the arm kept still at the top, not just time spent above the target
+  // while sweeping through it.
+  function trackHold(t) {
+    const a = rep.holdAnchor
+    if (a) {
+      a.lo = Math.min(a.lo, value)
+      a.hi = Math.max(a.hi, value)
+    }
+    if (!a || a.hi - a.lo > strict.stillDeg) rep.holdAnchor = { t, lo: value, hi: value }
+    rep.holdMs = Math.max(rep.holdMs, t - rep.holdAnchor.t)
   }
 
   // One smooth up-and-down: a fall of more than jitterDeg is a peak; rising
@@ -279,7 +293,7 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
       restAnchor.lo = Math.min(restAnchor.lo, value)
       restAnchor.hi = Math.max(restAnchor.hi, value)
     }
-    if (!restAnchor || restAnchor.hi - restAnchor.lo > strict.restStillDeg) restAnchor = { t, lo: value, hi: value }
+    if (!restAnchor || restAnchor.hi - restAnchor.lo > strict.stillDeg) restAnchor = { t, lo: value, hi: value }
     if (!rep && t - restAnchor.t >= strict.restHoldMs) armed = true
   }
 

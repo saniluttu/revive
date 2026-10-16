@@ -50,7 +50,7 @@ export const RULES = {
       if (!shoulder || !wrist || !other) return null
       const length = Math.hypot(wrist.x - shoulder.x, wrist.y - shoulder.y) / ref
       const outward = ((wrist.x - shoulder.x) * Math.sign(shoulder.x - other.x)) / ref
-      const reach = ABDUCTION.minReach * Math.sin(rad(Math.min(90, side.shoulderAngle)))
+      const reach = ABDUCTION.minReach * Math.sin(rad(side.shoulderAngle))
       return length < ABDUCTION.minArmLength || outward < reach
     },
   },

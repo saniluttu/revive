@@ -56,12 +56,12 @@ export const ABDUCTION = {
   // 1. Start from rest: arm down and still before a rep can start
   restMax: 30,
   restHoldMs: 500,
-  restStillDeg: 6, // the angle may wander this much and still count as "still"
+  stillDeg: 6, // at rest and at the top, the angle may wander this much and still count as "still"
   // 2. Controlled tempo
   topMin: 75, // hold at or above this…
   idealTop: [85, 110], // …ideally in this range
   minUpMs: 1000, // rest → top
-  minHoldMs: 500, // at the top
+  minHoldMs: 500, // held still at the top
   minDownMs: 1000, // top → rest
   // 3. Upper limit: only up to shoulder height
   maxPeak: 120,
@@ -73,7 +73,7 @@ export const ABDUCTION = {
   // 6. Side plane: above this angle the arm must reach out sideways, not forward
   sidePlaneFrom: 45,
   minArmLength: 0.8, // projected shoulder→wrist / resting length (lower = arm swung towards the camera)
-  minReach: 0.75, // outward wrist distance from the shoulder at the top / resting arm length
+  minReach: 0.75, // outward wrist distance from the shoulder / (resting arm length × sin(angle))
   // 7. One smooth motion: angle reversals bigger than this are a second peak (waving, bouncing)
   jitterDeg: 8,
   // 8. Landmark visibility of the working arm (wrist, elbow, shoulder, hip)
