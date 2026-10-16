@@ -23,7 +23,7 @@ function Bubble({ message }) {
   if (message.role === 'user') {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[85%] rounded-3xl rounded-br-md bg-brand-600 px-5 py-3 text-lg text-white sm:text-xl">
+        <div className="max-w-[85%] rounded-xl rounded-br-md bg-primary px-5 py-3 text-body-lg text-white sm:text-xl">
           {message.viaVoice && <span className="mr-2" aria-label={t('chat.spoken')}>🎤</span>}
           {message.text}
         </div>
@@ -32,17 +32,17 @@ function Bubble({ message }) {
   }
   if (message.redFlag) {
     return (
-      <div role="alert" className="max-w-[90%] rounded-3xl rounded-bl-md bg-red-600 px-5 py-4 text-white ring-4 ring-red-200">
+      <div role="alert" className="max-w-[90%] rounded-xl rounded-bl-md bg-red-600 px-5 py-4 text-white ring-4 ring-red-200">
         <div className="text-base font-bold uppercase tracking-wide">⚠ {t('chat.redFlagTitle')}</div>
-        <p className="mt-1 text-xl font-bold sm:text-2xl">{t('voice.redFlag')}</p>
+        <p className="mt-1 text-label-lg sm:text-2xl">{t('voice.redFlag')}</p>
       </div>
     )
   }
   return (
-    <div className="max-w-[85%] space-y-2 rounded-3xl rounded-bl-md bg-white px-5 py-3 shadow-sm ring-1 ring-slate-200">
-      <p className="text-lg sm:text-xl">{message.text}</p>
+    <div className="max-w-[85%] space-y-2 rounded-xl rounded-bl-md bg-surface-container-lowest px-5 py-3 shadow-soft ring-1 ring-outline-variant/40">
+      <p className="text-body-lg sm:text-xl">{message.text}</p>
       {message.provider && (
-        <span className="inline-block rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600">
+        <span className="inline-block rounded-full bg-surface-container px-3 py-1 text-sm font-semibold text-on-surface-variant">
           {t('chat.answeredBy', { name: PROVIDER_NAMES[message.provider] ?? message.provider })}
         </span>
       )}
@@ -166,17 +166,17 @@ export default function Chatbot() {
   return (
     <section className="mx-auto flex max-w-3xl flex-col gap-4">
       <div>
-        <h1 className="text-3xl font-bold sm:text-4xl">{t('pages.chat.title')}</h1>
-        <p className="mt-1 text-xl text-slate-600">{t('pages.chat.subtitle')}</p>
+        <h1 className="page-title">{t('pages.chat.title')}</h1>
+        <p className="page-subtitle">{t('pages.chat.subtitle')}</p>
       </div>
 
-      <div className="card min-h-[18rem] space-y-4 bg-slate-50" aria-live="polite">
+      <div className="card min-h-[18rem] space-y-4 bg-surface-container-low" aria-live="polite">
         {messages.length === 0 && (
           <div className="space-y-3">
-            <p className="text-lg text-slate-600">{t('chat.tryAsking')}</p>
+            <p className="text-body-lg text-on-surface-variant">{t('chat.tryAsking')}</p>
             <div className="flex flex-wrap gap-2">
               {suggestions.map((q) => (
-                <button key={q} type="button" className="rounded-full bg-white px-4 py-2 text-lg font-semibold text-brand-800 ring-2 ring-brand-100 hover:bg-brand-50" onClick={() => ask(q)}>
+                <button key={q} type="button" className="rounded-full bg-surface-container-lowest px-4 py-2 text-body-lg font-semibold text-primary ring-2 ring-primary-fixed hover:bg-surface-container-low" onClick={() => ask(q)}>
                   {q}
                 </button>
               ))}
@@ -186,12 +186,12 @@ export default function Chatbot() {
         {messages.map((m, i) => (
           <Bubble key={i} message={m} />
         ))}
-        {STATUS_TEXT[status] && <p className="text-lg font-semibold text-slate-500">{t(STATUS_TEXT[status])}</p>}
+        {STATUS_TEXT[status] && <p className="text-body-lg font-semibold text-on-surface-variant">{t(STATUS_TEXT[status])}</p>}
         <div ref={endRef} />
       </div>
 
       {error && (
-        <div role="alert" className="rounded-2xl bg-red-50 p-4 text-lg font-semibold text-red-800 ring-1 ring-red-200">
+        <div role="alert" className="rounded-xl bg-red-50 p-4 text-body-lg font-semibold text-error ring-1 ring-red-200">
           {t(`voice.errors.${error}`, { defaultValue: t('errors.unknown') })}
         </div>
       )}
@@ -205,7 +205,7 @@ export default function Chatbot() {
           disabled={busy}
           aria-label={t(recording ? 'voice.micStop' : 'voice.micStart')}
           className={`flex h-24 w-24 shrink-0 select-none items-center justify-center rounded-full text-white shadow-lg transition disabled:opacity-50 ${
-            recording ? 'animate-pulse bg-red-600' : 'bg-brand-600 hover:bg-brand-700'
+            recording ? 'animate-pulse bg-red-600' : 'bg-primary hover:bg-primary-container'
           }`}
         >
           <MicIcon />
@@ -218,7 +218,7 @@ export default function Chatbot() {
           }}
         >
           <input
-            className="min-w-0 flex-1 rounded-2xl border-2 border-slate-300 px-4 py-3 text-lg"
+            className="min-w-0 flex-1 rounded-xl border-2 border-outline-variant px-4 py-3 text-body-lg"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder={t('chat.placeholder')}
@@ -230,13 +230,13 @@ export default function Chatbot() {
         </form>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-base text-slate-500">{t(recording ? 'chat.micRecording' : 'chat.micHint')}</p>
-        <label className="inline-flex items-center gap-2 text-lg font-semibold">
-          <input type="checkbox" className="h-6 w-6 accent-brand-600" checked={speakReplies} onChange={(e) => setSpeakReplies(e.target.checked)} />
+        <p className="text-base text-on-surface-variant">{t(recording ? 'chat.micRecording' : 'chat.micHint')}</p>
+        <label className="inline-flex items-center gap-2 text-body-lg font-semibold">
+          <input type="checkbox" className="h-6 w-6 accent-primary" checked={speakReplies} onChange={(e) => setSpeakReplies(e.target.checked)} />
           {t('chat.speakReplies')}
         </label>
       </div>
-      <p className="text-sm text-slate-500">{t('voice.disclaimer')}</p>
+      <p className="text-sm text-on-surface-variant">{t('voice.disclaimer')}</p>
     </section>
   )
 }
