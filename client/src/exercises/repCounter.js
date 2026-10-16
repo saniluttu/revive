@@ -35,8 +35,17 @@ function median(values) {
   return v.length ? v[Math.floor(v.length / 2)] : null
 }
 
+const medianPoint = (points) => {
+  const x = median(points.map((p) => p?.x))
+  return x == null ? null : { x, y: median(points.map((p) => p?.y)) }
+}
+
 function makeBaseline(samples) {
+  const sidePoint = (side, part) => medianPoint(samples.map((f) => f.sides[side].points[part]))
   return {
+    shoulderWidth: median(samples.map((f) => f.shoulderWidth)),
+    hipMid: medianPoint(samples.map((f) => f.hipMid)),
+    ankles: { left: sidePoint('left', 'ankle'), right: sidePoint('right', 'ankle') },
     earShoulder: {
       left: median(samples.map((f) => f.earShoulder.left)),
       right: median(samples.map((f) => f.earShoulder.right)),

@@ -9,7 +9,22 @@ const workingSide = (f) => (f.working ? f.sides[f.working] : null)
 export const RULES = {
   // Shoulder abduction: shoulder-hip line tilt > 10°
   leanSideways: {
-    check: (f) => (f.view === 'front' && f.trunk ? f.trunk.tilt > 10 : null),
+    check: (f) => (f.view === 'front' && f.trunk ? f.trunk.tilt > ABDUCTION.maxTrunkTilt : null),
+  },
+
+  // Shoulder abduction: hips and feet stay where they were at calibration (no dancing, stepping or swaying)
+  standStill: {
+    check: (f, base) => {
+      if (!base?.shoulderWidth) return null
+      const limit = ABDUCTION.maxBodyDrift * base.shoulderWidth
+      const pairs = [
+        [f.hipMid, base.hipMid],
+        [f.sides.left.points.ankle, base.ankles?.left],
+        [f.sides.right.points.ankle, base.ankles?.right],
+      ].filter(([now, ref]) => now && ref)
+      if (!pairs.length) return null
+      return pairs.some(([now, ref]) => Math.hypot(now.x - ref.x, now.y - ref.y) > limit)
+    },
   },
 
   // Shoulder abduction: the working arm's elbow must stay straight (> 150°)

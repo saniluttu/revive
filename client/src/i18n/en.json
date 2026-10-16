@@ -222,7 +222,8 @@
     "leanBack": "Sit upright — don't lean back",
     "slowDown": "Slow down — rest your arm, then raise, hold and lower slowly",
     "tooHigh": "Only up to shoulder height — not higher",
-    "straightArm": "Keep your arm straight — don't bend the elbow"
+    "straightArm": "Keep your arm straight — don't bend the elbow",
+    "standStill": "Stand still — keep your hips and feet in place"
   },
   "parts": {
     "shoulder": "shoulders",
