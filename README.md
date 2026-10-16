@@ -74,6 +74,6 @@ The app runs without them; Firebase features are disabled until they're set.
 ## Build status
 
 - [x] Phase 1: Setup (client, server, Firebase config, LLM router skeleton)
-- [ ] Phase 2: Auth & profile
+- [x] Phase 2: Auth & profile (local authService; Firebase Auth swap pending)
 - [x] Phase 3: Pose core (skeleton overlay + live joint angles)
 - [ ] Phases 4–13: see REQUIREMENTS.md §9
