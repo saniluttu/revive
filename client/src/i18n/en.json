@@ -582,10 +582,26 @@
       "codeNotFound": "No patient has this code. Please check it and try again.",
       "alreadyLinked": "You are already linked to this patient.",
       "network": "Can't connect. Check your internet and try again.",
-      "unknown": "Something went wrong. Please try again."
+      "unknown": "Something went wrong. Please try again.",
+      "relationRequired": "Please choose your relation to the patient."
     },
     "copy": "Copy",
-    "copied": "Copied!"
+    "copied": "Copied!",
+    "relationLabel": "Your relation to the patient",
+    "addAnother": "Add another patient",
+    "relations": {
+      "son": "Son",
+      "daughter": "Daughter",
+      "spouse": "Spouse",
+      "grandchild": "Grandchild",
+      "relative": "Relative",
+      "friend": "Friend / Neighbour",
+      "homeNurse": "Home nurse"
+    },
+    "youAre": "you are their {{relation}}",
+    "youAre_female": "you are her {{relation}}",
+    "youAre_male": "you are his {{relation}}",
+    "caregiverWithRelation": "{{name}} — {{relation}}"
   },
   "history": {
     "empty": "No sessions yet. Finish an exercise and it will show up here.",

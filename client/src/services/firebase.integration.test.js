@@ -101,13 +101,15 @@ describe.skipIf(!ON)('Firebase services (emulator)', async () => {
     const caregiver = await auth.signUp({ email: email('son'), password, role: 'caregiver' })
     await expect(links.linkWithCode(caregiver, 'nope')).rejects.toMatchObject({ code: 'invalidCode' })
     await expect(links.linkWithCode(caregiver, 'ZZZZZZ')).rejects.toMatchObject({ code: 'codeNotFound' })
-    const link = await links.linkWithCode(caregiver, ids.code.toLowerCase())
-    expect(link).toMatchObject({ patientUid: ids.patient, patientName: 'Lakshmi', status: 'accepted' })
+    await expect(links.linkWithCode(caregiver, ids.code, [], 'butler')).rejects.toMatchObject({ code: 'relationRequired' })
+    const link = await links.linkWithCode(caregiver, ids.code.toLowerCase(), [], 'son')
+    expect(link).toMatchObject({ patientUid: ids.patient, patientName: 'Lakshmi', relation: 'son', status: 'accepted' })
     // linking again: the rules refuse to overwrite the link
     await expect(links.linkWithCode(caregiver, ids.code)).rejects.toMatchObject({ code: 'alreadyLinked' })
 
     const mine = await nextValue((ok, fail) => links.watchLinks(caregiver.uid, 'caregiver', ok, fail), (l) => l.length === 1)
-    expect(mine[0].id).toBe(links.linkId(caregiver.uid, ids.patient))
+    expect(mine[0]).toMatchObject({ id: links.linkId(caregiver.uid, ids.patient), relation: 'son' })
+    expect(await links.getPatientProfile(ids.patient)).toMatchObject({ name: 'Lakshmi' })
     const seen = await nextValue((ok, fail) => sessions.watchSessions(ids.patient, ok, fail))
     expect(seen).toHaveLength(1)
     expect(await nextValue((ok, fail) => links.watchPlan(ids.patient, ok, fail))).toBeNull()

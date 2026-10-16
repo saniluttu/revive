@@ -3,7 +3,8 @@
 //   inviteCodes/{code}  { patientUid, patientName, createdAt }  — a patient's 6-character code.
 //                        Anyone signed in may read one code they know; nobody can list them.
 //   links/{caregiverUid}_{patientUid}  { patientUid, caregiverUid, patientName, caregiverName,
-//                        code, status: 'accepted', createdAt }
+//                        relation, code, status: 'accepted', createdAt }
+//                        relation: the caregiver's relation to the patient (RELATIONS), null on older links
 //
 // Sharing the code is the patient's consent, so a link made with a valid code is
 // accepted straight away; the patient sees their caregivers on Home and can remove one.
@@ -16,6 +17,8 @@ import { db } from '../lib/firebase.js'
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
 export const CODE_LENGTH = 6
 export const LINK_STATUS = { PENDING: 'pending', ACCEPTED: 'accepted' }
+/** The caregiver's relation to the patient; labels in i18n `link.relations.<id>`. */
+export const RELATIONS = ['son', 'daughter', 'spouse', 'grandchild', 'relative', 'friend', 'homeNurse']
 
 /** Errors carry a `code`; the UI shows i18n `link.errors.<code>`. */
 function linkError(code) {
@@ -80,11 +83,13 @@ async function makeInviteCode(user, { random = Math.random, tries = 5 } = {}) {
 /**
  * A caregiver links to a patient with the patient's invite code.
  * @param existingLinks the caregiver's current links (from watchLinks), to spot a repeat
+ * @param relation      one of RELATIONS (or null)
  * @returns {Promise<object>} the link
  */
-export async function linkWithCode(caregiver, input, existingLinks = []) {
+export async function linkWithCode(caregiver, input, existingLinks = [], relation = null) {
   const code = normaliseCode(input)
   if (!code) throw linkError('invalidCode')
+  if (relation != null && !RELATIONS.includes(relation)) throw linkError('relationRequired')
   let invite
   try {
     invite = await getDoc(doc(db, 'inviteCodes', code))
@@ -101,6 +106,7 @@ export async function linkWithCode(caregiver, input, existingLinks = []) {
     caregiverUid: caregiver.uid,
     patientName: patientName ?? '',
     caregiverName: caregiver.profile?.name ?? caregiver.email ?? '',
+    relation,
     code,
     status: LINK_STATUS.ACCEPTED,
     createdAt: new Date().toISOString(),
@@ -145,6 +151,12 @@ export function watchLinks(uid, as, onChange, onError = () => {}) {
  */
 export function watchPlan(patientUid, onChange, onError = () => {}) {
   return onSnapshot(doc(db, 'plans', patientUid), (snap) => onChange(snap.exists() ? snap.data() : null), onError)
+}
+
+/** A linked patient's profile (name, age, gender…) or null. */
+export async function getPatientProfile(patientUid) {
+  const snap = await getDoc(doc(db, 'users', patientUid))
+  return snap.exists() ? (snap.data().profile ?? null) : null
 }
 
 /**

@@ -65,7 +65,9 @@ export default function InviteCard() {
               <li key={l.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface-container-low px-4 py-3 text-body-lg">
                 <span className="flex items-center gap-2">
                   <Icon name="person" className="text-primary" />
-                  {l.caregiverName}
+                  {l.relation
+                    ? t('link.caregiverWithRelation', { name: l.caregiverName, relation: t(`link.relations.${l.relation}`) })
+                    : l.caregiverName}
                 </span>
                 <button type="button" className="btn-secondary px-4 py-2 text-base" onClick={() => remove(l.id)}>
                   {t('link.remove')}

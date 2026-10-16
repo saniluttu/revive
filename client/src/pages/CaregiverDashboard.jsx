@@ -1,19 +1,53 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useAuth from '../auth/useAuth.js'
 import SessionHistory from '../components/SessionHistory.jsx'
 import { summarize } from '../components/progressStats.js'
-import { Empty, ErrorNote, Section } from '../components/ui.jsx'
+import { Empty, ErrorNote, Icon, Section } from '../components/ui.jsx'
+import i18n from '../i18n/index.js'
 import { formatDate } from '../reviews/plan.js'
-import { CODE_LENGTH, getPatientRecord, linkWithCode } from '../services/linkService.js'
+import { CODE_LENGTH, getPatientProfile, getPatientRecord, linkWithCode, RELATIONS } from '../services/linkService.js'
 import { useLinks, usePlan, useSessions } from '../services/useLive.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
+
+/** Big tappable relation chips, each labelled in the UI language with the other language under it. */
+function RelationChips({ value, onChange }) {
+  const { t, i18n: { language } } = useTranslation()
+  const other = i18n.getFixedT(language === 'ml' ? 'en' : 'ml')
+  return (
+    <fieldset>
+      <legend className="mb-2 text-label-lg">{t('link.relationLabel')}</legend>
+      <div className="flex flex-wrap gap-2">
+        {RELATIONS.map((id) => {
+          const on = value === id
+          return (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={on}
+              onClick={() => onChange(id)}
+              className={`flex min-h-[3.5rem] flex-col items-center justify-center rounded-full px-5 py-2 leading-tight ring-2 transition ${
+                on ? 'bg-primary text-on-primary ring-primary' : 'bg-surface-container-lowest text-on-surface ring-outline-variant hover:ring-primary'
+              }`}
+            >
+              <span className="text-label-lg">{t(`link.relations.${id}`)}</span>
+              <span lang={language === 'ml' ? 'en' : 'ml'} className={`text-sm ${on ? 'opacity-90' : 'text-on-surface-variant'}`}>
+                {other(`link.relations.${id}`)}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </fieldset>
+  )
+}
 
 function LinkForm({ links }) {
   const { t } = useTranslation()
   const { user } = useAuth()
   const [code, setCode] = useState('')
+  const [relation, setRelation] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [linkedName, setLinkedName] = useState(null)
@@ -24,9 +58,10 @@ function LinkForm({ links }) {
     setError(null)
     setLinkedName(null)
     try {
-      const link = await linkWithCode(user, code, links)
+      const link = await linkWithCode(user, code, links, relation)
       setLinkedName(link.patientName)
       setCode('')
+      setRelation(null)
     } catch (err) {
       setError(err.code ?? 'unknown')
     }
@@ -34,8 +69,11 @@ function LinkForm({ links }) {
   }
 
   return (
-    <form onSubmit={submit} className="card space-y-3">
-      <h2 className="text-headline-md">{t('link.addPatient')}</h2>
+    <form onSubmit={submit} className="card space-y-4">
+      <h2 className="flex items-center gap-2 text-headline-md">
+        <Icon name="person_add" className="text-primary" />
+        {t(links.length ? 'link.addAnother' : 'link.addPatient')}
+      </h2>
       <p className="text-body-lg text-on-surface-variant">{t('link.addPatientHint')}</p>
       <div className="flex flex-wrap gap-3">
         <input
@@ -48,10 +86,11 @@ function LinkForm({ links }) {
           aria-label={t('link.codeLabel')}
           placeholder="ABC234"
         />
-        <button type="submit" className="btn-primary" disabled={busy || !code.trim()}>
-          {busy ? t('common.pleaseWait') : t('link.linkButton')}
-        </button>
       </div>
+      <RelationChips value={relation} onChange={setRelation} />
+      <button type="submit" className="btn-primary" disabled={busy || !code.trim() || !relation}>
+        {busy ? t('common.pleaseWait') : t('link.linkButton')}
+      </button>
       {error && (
         <p role="alert" className="text-body-lg font-semibold text-error">
           {t(`link.errors.${error}`, { defaultValue: t('errors.unknown') })}
@@ -69,6 +108,17 @@ function LinkForm({ links }) {
 /** One linked patient at a glance: today's status, last session, 24 h alert. */
 function PatientCard({ link, selected, onSelect }) {
   const { t, i18n } = useTranslation()
+  const [gender, setGender] = useState(null)
+  useEffect(() => {
+    let alive = true
+    getPatientProfile(link.patientUid)
+      .then((p) => alive && setGender(p?.gender ?? null))
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [link.patientUid])
+  const relation = link.relation && t(`link.relations.${link.relation}`)
   const { data: sessions, loading } = useSessions(link.patientUid)
   const [now] = useState(() => Date.now())
   const stats = sessions ? summarize(sessions, now) : null
@@ -83,7 +133,14 @@ function PatientCard({ link, selected, onSelect }) {
       className={`card space-y-2 text-left transition ${selected ? 'ring-4 ring-primary' : 'hover:ring-primary'}`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-headline-md">{link.patientName || t('link.patient')}</span>
+        <span className="min-w-0">
+          <span className="block text-headline-md">{link.patientName || t('link.patient')}</span>
+          {relation && (
+            <span className="block text-body-lg text-on-surface-variant">
+              {t('link.youAre', { context: gender, relation: i18n.language === 'en' ? relation.toLowerCase() : relation })}
+            </span>
+          )}
+        </span>
         {stats && (
           <span className={`rounded-full px-3 py-1 text-base font-bold ${stats.doneToday ? 'bg-primary-fixed/50 text-primary' : 'bg-surface-container text-on-surface-variant'}`}>
             {t(stats.doneToday ? 'caregiver.doneToday' : 'caregiver.notDoneToday')}
@@ -193,9 +250,10 @@ export default function CaregiverDashboard() {
         </div>
       )}
 
-      {current && <PatientPanel key={current.id} link={current} />}
+      {/* Always visible, so a second patient (e.g. both parents) can be added at any time */}
+      {links && <LinkForm links={links} />}
 
-      <LinkForm links={links ?? []} />
+      {current && <PatientPanel key={current.id} link={current} />}
     </section>
   )
 }

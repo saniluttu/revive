@@ -3,7 +3,7 @@
 //
 //   patient          amma@revive.demo   Lakshmi, 68, Malayalam — knee report, approved plan,
 //                                       ~2 weeks of sessions (quality up, pain down)
-//   caregiver        son@revive.demo    Arjun — linked to Lakshmi with her invite code
+//   caregiver        son@revive.demo    Arjun — linked to Lakshmi (her son) with her invite code
 //   physiotherapist  physio@revive.demo Dr. Anitha Menon — approved Lakshmi's plan
 //
 //   cd client && npm run seed                   (uses VITE_FIREBASE_* from client/.env)
@@ -276,6 +276,7 @@ async function link(caregiver, patient, code) {
     caregiverUid: caregiver.uid,
     patientName: patient.profile.name,
     caregiverName: caregiver.profile.name,
+    relation: 'son',
     code,
     status: 'accepted',
     createdAt: new Date().toISOString(),
