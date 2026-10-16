@@ -42,7 +42,15 @@ const medianPoint = (points) => {
 
 function makeBaseline(samples) {
   const sidePoint = (side, part) => medianPoint(samples.map((f) => f.sides[side].points[part]))
+  const armLength = (side) =>
+    median(
+      samples.map((f) => {
+        const { shoulder, wrist } = f.sides[side].points
+        return shoulder && wrist ? Math.hypot(wrist.x - shoulder.x, wrist.y - shoulder.y) : null
+      }),
+    )
   return {
+    armLength: { left: armLength('left'), right: armLength('right') },
     shoulderWidth: median(samples.map((f) => f.shoulderWidth)),
     hipMid: medianPoint(samples.map((f) => f.hipMid)),
     ankles: { left: sidePoint('left', 'ankle'), right: sidePoint('right', 'ankle') },

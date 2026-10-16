@@ -5,6 +5,7 @@
 import { ABDUCTION } from './library.js'
 
 const workingSide = (f) => (f.working ? f.sides[f.working] : null)
+const rad = (d) => (d * Math.PI) / 180
 
 export const RULES = {
   // Shoulder abduction: shoulder-hip line tilt > 10°
@@ -32,6 +33,25 @@ export const RULES = {
     check: (f) => {
       const elbow = workingSide(f)?.elbowAngle
       return elbow == null ? null : elbow < ABDUCTION.minElbowAngle
+    },
+  },
+
+  // Shoulder abduction: the arm moves out to the side, not forward. A forward swing
+  // points the arm at the camera, so it looks shorter than at rest and the wrist
+  // reaches out less than the angle implies.
+  sideways: {
+    check: (f, base) => {
+      const side = workingSide(f)
+      const ref = base?.armLength?.[f.working]
+      if (!side || side.shoulderAngle == null || !ref) return null
+      if (side.shoulderAngle < ABDUCTION.sidePlaneFrom) return false
+      const { shoulder, wrist } = side.points
+      const other = f.sides[f.working === 'left' ? 'right' : 'left'].points.shoulder
+      if (!shoulder || !wrist || !other) return null
+      const length = Math.hypot(wrist.x - shoulder.x, wrist.y - shoulder.y) / ref
+      const outward = ((wrist.x - shoulder.x) * Math.sign(shoulder.x - other.x)) / ref
+      const reach = ABDUCTION.minReach * Math.sin(rad(Math.min(90, side.shoulderAngle)))
+      return length < ABDUCTION.minArmLength || outward < reach
     },
   },
 

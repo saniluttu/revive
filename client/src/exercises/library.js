@@ -99,10 +99,10 @@ export const EXERCISES = [
     target: ABDUCTION.topMin,
     ideal: 90,
     meter: [0, 130],
-    rules: ['leanSideways', 'shrug', 'straightArm', 'standStill'],
+    rules: ['leanSideways', 'shrug', 'straightArm', 'standStill', 'sideways'],
     mainFault: 'shrug',
     blockAtTarget: ['shrug'],
-    voidOn: ['straightArm', 'standStill', 'leanSideways'],
+    voidOn: ['straightArm', 'standStill', 'leanSideways', 'sideways'],
     strict: ABDUCTION,
   },
   {
