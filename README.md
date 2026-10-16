@@ -87,9 +87,14 @@ The app runs without them; Firebase features are disabled until they're set.
   (`server/src/routes/report.js`). The vision task goes to Gemini, then Groq (images only, if
   it has a vision model), then OpenRouter. Replies are validated in `server/src/report/analysis.js`: only body parts and
   exercise IDs from our library survive, and an invalid reply makes the router try the next
-  provider. The last good result per file (SHA-256) is saved in `server/cache/` (git-ignored)
-  and served if every provider fails — **run the demo report once before the demo** so it is
-  cached. Run the server tests with `cd server && npm test`.
+  provider. Gemini is retried on 503 "high demand" / 429 (after 2 s, then 5 s), then its
+  fallback model (`GEMINI_FALLBACK_MODEL`, or another current flash / flash-lite picked at
+  startup) gets the same treatment, before Groq / OpenRouter. The page streams progress and shows
+  "trying again" meanwhile. Each good result is saved in `server/cache/` (git-ignored) by file
+  hash: the same file is answered instantly next time, and a saved answer is served if every
+  provider fails. **For the demo:** analyse the demo report once, then set `DEMO_MODE=true` so
+  known files always come from the cache (even after prompt changes). Run the server tests
+  with `cd server && npm test`.
 
 ## Build status
 

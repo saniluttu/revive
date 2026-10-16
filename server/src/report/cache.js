@@ -1,6 +1,6 @@
-// Last successful analysis per report file (SHA-256 of its bytes), kept on disk
-// so a demo still works if every AI provider is down. Contains patient data:
-// the cache directory is git-ignored.
+// Last successful analysis per report file (SHA-256 of its bytes), kept on disk:
+// the same file is answered instantly next time, and a demo still works if every
+// AI provider is down. Contains patient data: the cache directory is git-ignored.
 
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
@@ -11,7 +11,7 @@ const CACHE_FILE =
   process.env.REPORT_CACHE_FILE ||
   path.join(path.dirname(fileURLToPath(import.meta.url)), '../../cache/report-analysis.json')
 
-let entries = null // hash -> { analysis, provider, savedAt }
+let entries = null // hash -> { analysis, provider, model, promptVersion, savedAt }
 
 async function load() {
   if (entries) return entries

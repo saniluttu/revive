@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { pickGeminiModels, pickGroqModels, pickOpenRouterModels } from '../src/llm/models.js'
+import { pickGeminiFallback, pickGeminiModels, pickGroqModels, pickOpenRouterModels } from '../src/llm/models.js'
 
 const or = (id, { input = ['text'], output = ['text'], prompt = '0', completion = '0', rf = true, extra = {}, expires } = {}) => ({
   id,
@@ -64,4 +64,20 @@ test('Gemini: newest stable flash first', () => {
     ]),
     ['gemini-3.8-flash', 'gemini-3.8-flash-preview-09', 'gemini-2.5-flash'],
   )
+})
+
+test('Gemini fallback: another current flash / flash-lite, stable first', () => {
+  const m = (name, methods = ['generateContent']) => ({ name: `models/${name}`, supportedGenerationMethods: methods })
+  const list = [
+    m('gemini-3.8-flash'),
+    m('gemini-3.8-flash-lite'),
+    m('gemini-3.9-flash-preview'),
+    m('gemini-3.5-flash'),
+    m('gemini-3.8-flash-image'),
+    m('gemini-3.8-pro'),
+    m('gemini-4.0-flash-lite', ['countTokens']),
+  ]
+  assert.equal(pickGeminiFallback(list, 'gemini-3.8-flash'), 'gemini-3.8-flash-lite')
+  assert.equal(pickGeminiFallback(list, 'gemini-3.8-flash-lite'), 'gemini-3.8-flash')
+  assert.equal(pickGeminiFallback([m('gemini-3.8-flash')], 'gemini-3.8-flash'), null)
 })

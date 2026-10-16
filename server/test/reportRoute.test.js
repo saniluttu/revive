@@ -3,17 +3,22 @@ import assert from 'node:assert/strict'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { after, before, test } from 'node:test'
+import { after, before, beforeEach, test } from 'node:test'
 
 process.env.REPORT_CACHE_FILE = path.join(mkdtempSync(path.join(tmpdir(), 'revive-')), 'cache.json')
 process.env.GEMINI_API_KEYS = 'g1'
 process.env.OPENROUTER_API_KEYS = 'o1'
 process.env.GROQ_API_KEYS = 'q1'
+process.env.GEMINI_MODEL = 'gemini-main'
+process.env.GEMINI_FALLBACK_MODEL = 'gemini-backup'
+process.env.GEMINI_RETRY_DELAYS_MS = '1,1'
 process.env.OPENROUTER_MODEL = 'free/text:free'
 process.env.OPENROUTER_VISION_MODEL = 'free/vision:free'
+delete process.env.DEMO_MODE
 
 const express = (await import('express')).default
 const reportRouter = (await import('../src/routes/report.js')).default
+const { saveCached, hashFile } = await import('../src/report/cache.js')
 
 const analysis = {
   diagnosis: 'Early knee osteoarthritis',
@@ -28,22 +33,23 @@ const analysis = {
 }
 
 const realFetch = globalThis.fetch
-let mode = 'ok' // ok | geminiDown | allDown
-const calls = []
+let mode = 'ok' // ok | gemini503 | allDown
+let calls = []
+beforeEach(() => {
+  calls = []
+})
 
 globalThis.fetch = async (url, opts) => {
   if (String(url).startsWith('http://127.0.0.1')) return realFetch(url, opts)
   calls.push(String(url))
-  const fail = () => new Response('quota', { status: 429 })
   if (String(url).includes('generativelanguage')) {
-    if (mode !== 'ok') return fail()
+    if (mode === 'gemini503' || mode === 'allDown') return new Response('model is experiencing high demand', { status: 503 })
     return Response.json({ candidates: [{ content: { parts: [{ text: JSON.stringify(analysis) }] } }] })
   }
-  if (String(url).includes('openrouter')) {
-    if (mode === 'allDown') return fail()
+  if (String(url).includes('openrouter') && mode !== 'allDown') {
     return Response.json({ choices: [{ message: { content: JSON.stringify(analysis) } }] })
   }
-  return fail()
+  return new Response('quota', { status: 429 })
 }
 
 let server, base
@@ -57,40 +63,87 @@ before(async () => {
 })
 after(() => server.close())
 
-const post = (file) =>
-  realFetch(base, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file }) })
+const post = (file, headers = {}) =>
+  realFetch(base, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify({ file }) })
+const postStream = async (file) => {
+  const res = await post(file, { Accept: 'application/x-ndjson' })
+  return (await res.text()).trim().split('\n').map((l) => JSON.parse(l))
+}
+
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
-const fileA = { name: 'a.png', mimeType: 'image/png', data: Buffer.concat([PNG, Buffer.from('report A')]).toString('base64') }
-const fileB = { name: 'b.png', mimeType: 'image/png', data: Buffer.concat([PNG, Buffer.from('report B')]).toString('base64') }
+const png = (label) => {
+  const bytes = Buffer.concat([PNG, Buffer.from(label)])
+  return { file: { name: `${label}.png`, mimeType: 'image/png', data: bytes.toString('base64') }, hash: hashFile(bytes) }
+}
+const geminiCalls = (model) => calls.filter((u) => u.includes(`models/${model}:`)).length
 
 test('rejects unsupported files', async () => {
   const res = await post({ name: 'x.txt', mimeType: 'text/plain', data: 'aGk=' })
   assert.equal(res.status, 400)
 })
 
-test('Gemini answers; invalid exercise ids are dropped', async () => {
-  const res = await post(fileA)
-  const body = await res.json()
-  assert.equal(res.status, 200)
+test('Gemini answers; invalid exercise ids are dropped; same file again is served from the cache instantly', async () => {
+  const { file } = png('A')
+  const body = await (await post(file)).json()
   assert.equal(body.provider, 'gemini')
+  assert.equal(body.cached, undefined)
   assert.deepEqual(body.analysis.recommended_exercise_ids, ['mini-squat'])
-  assert.ok(!calls.some((u) => u.includes('groq')), 'Groq has no vision and must be skipped')
+
+  calls = []
+  const again = await (await post(file)).json()
+  assert.equal(again.cached, true)
+  assert.equal(again.provider, 'gemini')
+  assert.equal(calls.length, 0, 'no AI call for a known file')
 })
 
-test('falls back to OpenRouter, then to the cache for the same file', async () => {
-  mode = 'geminiDown'
-  let body = await (await post(fileA)).json()
-  assert.equal(body.provider, 'openrouter')
+test('Gemini 503: 2 retries, then the fallback model (2 retries), then OpenRouter — progress is streamed', async () => {
+  mode = 'gemini503'
+  const lines = await postStream(png('B').file)
+  assert.equal(geminiCalls('gemini-main'), 3)
+  assert.equal(geminiCalls('gemini-backup'), 3)
+  assert.ok(!calls.some((u) => u.includes('groq')), 'Groq has no vision model here')
+  const retrying = lines.filter((l) => l.type === 'retrying')
+  assert.equal(retrying.length, 6) // 5 Gemini retries/fallbacks + the move to OpenRouter
+  assert.deepEqual(lines.at(-1).provider, 'openrouter')
+  assert.equal(lines.at(-1).type, 'result')
+})
 
-  // gemini & openrouter keys are now cooling down for 60 s → everything fails
+test('a cached answer from an older prompt is redone, but served if every provider fails', async () => {
+  const stale = png('C')
+  await saveCached(stale.hash, { analysis: { ...analysis, diagnosis: 'old' }, provider: 'gemini', promptVersion: 'old' })
+
+  mode = 'ok'
+  let body = await (await post(stale.file)).json()
+  assert.notEqual(body.analysis.diagnosis, 'old')
+  assert.equal(body.cached, undefined)
+
+  const stale2 = png('D')
+  await saveCached(stale2.hash, { analysis: { ...analysis, diagnosis: 'old' }, provider: 'gemini', promptVersion: 'old' })
   mode = 'allDown'
-  const res = await post(fileA)
-  body = await res.json()
-  assert.equal(res.status, 200)
+  body = await (await post(stale2.file)).json()
   assert.equal(body.cached, true)
-  assert.equal(body.provider, 'openrouter')
-  assert.equal(body.analysis.diagnosis, analysis.diagnosis)
+  assert.equal(body.analysis.diagnosis, 'old')
+  assert.ok(body.message)
+})
 
-  const miss = await post(fileB)
-  assert.equal(miss.status, 503)
+test('DEMO_MODE serves any cached answer for a known file without calling the AI', async () => {
+  const stale = png('E')
+  await saveCached(stale.hash, { analysis: { ...analysis, diagnosis: 'demo' }, provider: 'openrouter', promptVersion: 'old' })
+  mode = 'ok'
+  process.env.DEMO_MODE = 'true'
+  try {
+    const body = await (await post(stale.file)).json()
+    assert.equal(body.analysis.diagnosis, 'demo')
+    assert.equal(body.cached, true)
+    assert.equal(calls.length, 0)
+  } finally {
+    delete process.env.DEMO_MODE
+  }
+})
+
+test('unknown file with every provider down → ai_unavailable (503, or a streamed error line)', async () => {
+  mode = 'allDown'
+  assert.equal((await post(png('F').file)).status, 503)
+  const lines = await postStream(png('G').file)
+  assert.deepEqual(lines.at(-1), { type: 'error', error: 'ai_unavailable' })
 })

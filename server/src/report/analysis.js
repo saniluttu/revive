@@ -1,5 +1,6 @@
 // Prompt and strict validation for MRI report analysis (REQUIREMENTS §4 F3).
 
+import { createHash } from 'node:crypto'
 import { BODY_PART_IDS, EXERCISE_CATALOG, EXERCISE_IDS } from './exerciseCatalog.js'
 
 export const SEVERITIES = ['mild', 'moderate', 'severe', 'unknown']
@@ -35,6 +36,10 @@ Rules:
   and return empty arrays.`
 
 export const USER_PROMPT = 'Here is my medical report. Analyse it and reply with the JSON object.'
+
+// Changes whenever the prompt or exercise library changes, so cached analyses made
+// with an older prompt are redone (except in DEMO_MODE, see routes/report.js)
+export const PROMPT_VERSION = createHash('sha256').update(SYSTEM_PROMPT + USER_PROMPT).digest('hex').slice(0, 12)
 
 const isObj = (v) => v != null && typeof v === 'object' && !Array.isArray(v)
 const str = (v) => (typeof v === 'string' ? v.trim() : '')

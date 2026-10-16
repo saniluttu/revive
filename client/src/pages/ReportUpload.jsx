@@ -10,15 +10,17 @@ export default function ReportUpload() {
   const navigate = useNavigate()
   const [file, setFile] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [retrying, setRetrying] = useState(false)
   const [error, setError] = useState(null)
 
   async function handleAnalyze(e) {
     e.preventDefault()
     if (!file) return
     setBusy(true)
+    setRetrying(false)
     setError(null)
     try {
-      const result = await analyzeReport(file)
+      const result = await analyzeReport(file, { onRetry: () => setRetrying(true) })
       navigate('/report/results', { state: result })
     } catch (err) {
       setError(KNOWN_ERRORS.includes(err.code) ? err.code : 'unknown')
@@ -61,13 +63,17 @@ export default function ReportUpload() {
 
         <div className="flex flex-col gap-3 sm:flex-row">
           <button type="submit" className="btn-primary flex-1" disabled={!file || busy}>
-            {busy ? t('report.analyzing') : t('report.analyze')}
+            {busy ? t(retrying ? 'report.analyzingRetry' : 'report.analyzing') : t('report.analyze')}
           </button>
           <Link to="/exercises" className="btn-secondary flex-1">
             {t('report.skip')}
           </Link>
         </div>
-        {busy && <p className="text-center text-lg text-slate-600">{t('report.analyzingHint')}</p>}
+        {busy && (
+          <p role="status" className="text-center text-lg text-slate-600">
+            {t(retrying ? 'report.retryingHint' : 'report.analyzingHint')}
+          </p>
+        )}
       </form>
 
       <p className="text-base text-slate-500">{t('report.privacy')}</p>

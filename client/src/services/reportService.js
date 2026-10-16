@@ -44,28 +44,76 @@ function readBase64(file) {
   })
 }
 
+const NETWORK_RETRY_MS = 2000
+
+/**
+ * Reads the server's reply. A streamed reply (application/x-ndjson) sends
+ * `{ type: 'retrying' }` lines while the AI is retried, then one
+ * `{ type: 'result', ... }` or `{ type: 'error', error }` line; anything else is plain JSON.
+ * @returns {Promise<object>} the result body
+ */
+export async function readReply(res, onRetry = () => {}) {
+  if (!res.headers.get('content-type')?.includes('application/x-ndjson')) {
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) throw new ReportError(body.error || 'unknown')
+    return body
+  }
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  for (;;) {
+    const { value, done } = await reader.read()
+    buffer += decoder.decode(value, { stream: !done })
+    const lines = buffer.split('\n')
+    buffer = done ? '' : lines.pop()
+    for (const line of lines) {
+      if (!line.trim()) continue
+      const event = JSON.parse(line)
+      if (event.type === 'retrying') onRetry(event)
+      else if (event.type === 'error') throw new ReportError(event.error || 'unknown')
+      else if (event.type === 'result') return event
+    }
+    if (done) throw new ReportError('network') // stream ended without a result
+  }
+}
+
+async function postReport(payload, onRetry) {
+  const res = await fetch(`${API_BASE}/api/report/analyze`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/x-ndjson, application/json' },
+    body: JSON.stringify(payload),
+  })
+  return readReply(res, onRetry)
+}
+
 /**
  * @param {File} file PDF or image of the written report
+ * @param {{ onRetry?: () => void }} [options] called whenever the AI (or the connection) is being retried
  * @returns {Promise<{ analysis: object, provider: string, cached?: boolean, fileName: string }>}
  */
-export async function analyzeReport(file) {
+export async function analyzeReport(file, { onRetry = () => {} } = {}) {
   if (!REPORT_TYPES.includes(file.type)) throw new ReportError('unsupported_file')
   if (file.size > MAX_REPORT_BYTES) throw new ReportError('file_too_large')
 
   const upload = SENT_AS_IS.includes(file.type) ? file : await toJpeg(file)
   const data = await readBase64(upload)
-  let res
+  const payload = { file: { name: file.name, mimeType: upload.type, data } }
+
+  let body
   try {
-    res = await fetch(`${API_BASE}/api/report/analyze`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ file: { name: file.name, mimeType: upload.type, data } }),
-    })
-  } catch {
-    throw new ReportError('network')
+    body = await postReport(payload, onRetry)
+  } catch (err) {
+    if (err instanceof ReportError && err.code !== 'network') throw err
+    // Connection dropped: try once more before giving up
+    onRetry()
+    await new Promise((resolve) => setTimeout(resolve, NETWORK_RETRY_MS))
+    try {
+      body = await postReport(payload, onRetry)
+    } catch (retryErr) {
+      throw retryErr instanceof ReportError ? retryErr : new ReportError('network')
+    }
   }
-  const body = await res.json().catch(() => ({}))
-  if (!res.ok) throw new ReportError(body.error || 'unknown')
 
   const result = { analysis: body.analysis, provider: body.provider, cached: Boolean(body.cached), fileName: file.name }
   try {

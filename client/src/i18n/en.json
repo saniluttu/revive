@@ -287,6 +287,8 @@
     "fileHint": "PDF or photo (JPG, PNG), up to 10 MB",
     "analyze": "Read my report",
     "analyzing": "Reading your report…",
+    "analyzingRetry": "Reading your report… (trying again)",
+    "retryingHint": "Our AI helper is busy — we are trying again. Please wait.",
     "analyzingHint": "This can take up to a minute.",
     "skip": "Skip — choose exercises myself",
     "privacy": "Only the report file is sent to our AI helper. Your camera video never leaves this device.",

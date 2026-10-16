@@ -8,6 +8,7 @@ process.env.OPENROUTER_API_KEYS = 'o1'
 process.env.GEMINI_MODEL = 'gemini-3.8-flash'
 process.env.GROQ_VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
 process.env.OPENROUTER_VISION_MODEL = 'google/gemma-4-31b-it:free'
+process.env.GEMINI_RETRY_DELAYS_MS = '1,1'
 
 const { route } = await import('../src/llm/llmRouter.js')
 
@@ -88,4 +89,21 @@ test('vision calls get a 60 s timeout, chat calls 15 s', async () => {
 test('built-in Gemini default is gemini-3.8-flash', async () => {
   const { DEFAULTS } = await import('../src/llm/models.js')
   assert.equal(DEFAULTS.GEMINI_MODEL, 'gemini-3.8-flash')
+})
+
+test('the OpenRouter fallback for a report also gets the 60 s vision timeout', async () => {
+  const realTimeout = AbortSignal.timeout
+  const seen = []
+  AbortSignal.timeout = (ms) => (seen.push(ms), realTimeout.call(AbortSignal, ms))
+  globalThis.fetch = async (url) => {
+    if (!String(url).includes('openrouter')) return new Response('down', { status: 500 })
+    return Response.json({ choices: [{ message: { content: '{"ok":1}' } }] })
+  }
+  try {
+    const res = await route({ task: 'vision', messages: [{ role: 'user', content: 'read' }], images: [pdf] })
+    assert.equal(res.provider, 'openrouter')
+  } finally {
+    AbortSignal.timeout = realTimeout
+  }
+  assert.equal(seen.at(-1), 60_000)
 })

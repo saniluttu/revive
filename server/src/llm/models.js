@@ -4,6 +4,8 @@
 //     text and one for vision, unless OPENROUTER_MODEL / OPENROUTER_VISION_MODEL is set
 //   - Groq: a vision model if Groq currently has one, otherwise Groq is skipped for vision
 //   - Gemini / Groq text: if the configured model is gone, log it and pick a current one
+//   - Gemini fallback: a second flash / flash-lite model tried before leaving Gemini
+//     (GEMINI_FALLBACK_MODEL overrides)
 
 const LIST_TIMEOUT_MS = 10_000
 const OPENROUTER_FALLBACKS = 3 // OpenRouter tries these in order (`models` param)
@@ -14,18 +16,20 @@ export const DEFAULTS = {
 }
 
 // Env var to change when a provider's model for a task is wrong
-export function modelEnvVar(provider, task) {
+// (`index` 1 = Gemini's fallback model)
+export function modelEnvVar(provider, task, index = 0) {
   const vision = task === 'vision'
-  if (provider === 'gemini') return 'GEMINI_MODEL'
+  if (provider === 'gemini') return index > 0 ? 'GEMINI_FALLBACK_MODEL' : 'GEMINI_MODEL'
   if (provider === 'groq') return vision ? 'GROQ_VISION_MODEL' : 'GROQ_MODEL'
   return vision ? 'OPENROUTER_VISION_MODEL' : 'OPENROUTER_MODEL'
 }
 
 const env = (name) => process.env[name]?.trim() || null
 
-// provider -> { text, vision }: a model id, a list of ids (OpenRouter), or null (unavailable)
+// provider -> { text, vision }: a model id, a list of ids (OpenRouter), or null (unavailable).
+// Gemini also has `fallback`, used for both tasks.
 const chosen = {
-  gemini: { text: null, vision: null },
+  gemini: { text: null, vision: null, fallback: null },
   groq: { text: null, vision: null },
   openrouter: { text: null, vision: null },
 }
@@ -35,7 +39,7 @@ let discovered = false
 function fromEnv() {
   const gemini = env('GEMINI_MODEL') ?? DEFAULTS.GEMINI_MODEL
   return {
-    gemini: { text: gemini, vision: gemini },
+    gemini: { text: gemini, vision: gemini, fallback: env('GEMINI_FALLBACK_MODEL') },
     groq: { text: env('GROQ_MODEL') ?? DEFAULTS.GROQ_MODEL, vision: env('GROQ_VISION_MODEL') },
     openrouter: { text: env('OPENROUTER_MODEL'), vision: env('OPENROUTER_VISION_MODEL') },
   }
@@ -45,6 +49,18 @@ function fromEnv() {
 export function modelFor(provider, task) {
   const key = task === 'vision' ? 'vision' : 'text'
   return (discovered ? chosen : fromEnv())[provider]?.[key] ?? null
+}
+
+/**
+ * Models to try in order for a provider + task. Each entry is one request's
+ * `model` (for OpenRouter an array: it falls back through them itself).
+ */
+export function modelsFor(provider, task) {
+  const primary = modelFor(provider, task)
+  if (!primary) return []
+  if (provider !== 'gemini') return [primary]
+  const fallback = (discovered ? chosen : fromEnv()).gemini.fallback
+  return fallback && fallback !== primary ? [primary, fallback] : [primary]
 }
 
 export function chosenModels() {
@@ -124,6 +140,24 @@ export function pickGeminiModels(models) {
     })
 }
 
+/**
+ * A second Gemini model for when the primary is overloaded: another current
+ * flash or flash-lite model, stable before preview, newest first, flash before lite.
+ */
+export function pickGeminiFallback(models, primary) {
+  const version = (id) => Number(id.match(/^gemini-(\d+(?:\.\d+)?)/)?.[1] ?? 0)
+  const preview = (id) => (/preview|exp/.test(id) ? 1 : 0)
+  const lite = (id) => (/lite/.test(id) ? 1 : 0)
+  return (
+    models
+      .filter((m) => (m.supportedGenerationMethods ?? []).includes('generateContent'))
+      .map((m) => m.name.replace(/^models\//, ''))
+      .filter((id) => id !== primary && /^gemini-[\d.]+-flash/.test(id) && !/image|tts|live|audio|thinking/.test(id))
+      .sort((a, b) => preview(a) - preview(b) || version(b) - version(a) || lite(a) - lite(b) || a.length - b.length)[0] ??
+    null
+  )
+}
+
 // ---------- discovery ----------
 
 const firstKey = (envKey) => env(envKey)?.split(',')[0]?.trim() || null
@@ -142,13 +176,24 @@ async function discoverGemini(base) {
     'x-goog-api-key': key,
   })
   const available = models.map((m) => m.name.replace(/^models\//, ''))
-  if (available.includes(configured)) return base.gemini
-  const pick = pickGeminiModels(models)[0] ?? null
-  console.warn(
-    `[models] Gemini model "${configured}" is not available. Set GEMINI_MODEL in server/.env` +
-      (pick ? ` — using "${pick}" for now.` : '.'),
-  )
-  return pick ? { text: pick, vision: pick } : base.gemini
+
+  let primary = configured
+  if (!available.includes(configured)) {
+    const pick = pickGeminiModels(models)[0] ?? null
+    console.warn(
+      `[models] Gemini model "${configured}" is not available. Set GEMINI_MODEL in server/.env` +
+        (pick ? ` — using "${pick}" for now.` : '.'),
+    )
+    primary = pick ?? configured
+  }
+
+  let fallback = base.gemini.fallback
+  if (fallback && !available.includes(fallback)) {
+    console.warn(`[models] Gemini fallback model "${fallback}" is not available. Set GEMINI_FALLBACK_MODEL in server/.env — auto-picking one.`)
+    fallback = null
+  }
+  fallback ??= pickGeminiFallback(models, primary)
+  return { text: primary, vision: primary, fallback }
 }
 
 async function discoverGroq(base) {
@@ -222,6 +267,7 @@ export async function initModels() {
 
   const show = (v) => (Array.isArray(v) ? v.join(' → ') : (v ?? 'none'))
   for (const [name, m] of Object.entries(chosen)) {
-    console.log(`[models] ${name}: text = ${show(m.text)}; vision = ${show(m.vision)}`)
+    const fallback = m.fallback !== undefined ? `; fallback = ${show(m.fallback)}` : ''
+    console.log(`[models] ${name}: text = ${show(m.text)}; vision = ${show(m.vision)}${fallback}`)
   }
 }
