@@ -1,4 +1,5 @@
-// Pre-generates the Live Session's spoken cues (F7) with Sarvam TTS:
+// Pre-generates the Live Session's spoken cues (F7) and every exercise's
+// read-aloud instructions (intro, steps, key tip) with Sarvam TTS:
 //   client/public/audio/{ml,en}/<cue id>.mp3  +  client/public/audio/manifest.json
 //
 //   npm run voice-cues            (from server/; needs SARVAM_API_KEY in server/.env)

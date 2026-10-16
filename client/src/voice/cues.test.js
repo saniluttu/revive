@@ -3,7 +3,8 @@ import en from '../i18n/en.json'
 import ml from '../i18n/ml.json'
 import { RULES } from '../exercises/rules.js'
 import { createCueQueue } from './cuePlayer.js'
-import { cuesForUpdate, cueTexts } from './cues.js'
+import { EXERCISES } from '../exercises/library.js'
+import { cuesForUpdate, cueTexts, instructionCues } from './cues.js'
 
 const snap = (over = {}) => ({
   status: 'active',
@@ -24,6 +25,29 @@ describe('cue texts', () => {
     }
     expect(Object.keys(cueTexts(ml)).sort()).toEqual(Object.keys(cueTexts(en)).sort())
   })
+
+  it("has every exercise's intro, steps and tip", () => {
+    for (const dict of [en, ml]) {
+      const texts = cueTexts(dict)
+      for (const e of EXERCISES) {
+        const ex = dict.exercises[e.id]
+        expect(texts[`ex-${e.id}-intro`]).toBe(`${ex.name}. ${ex.setup}`)
+        ex.steps.forEach((step, i) => expect(texts[`ex-${e.id}-step-${i + 1}`]).toBe(step))
+        expect(texts[`ex-${e.id}-tip`]).toBe(ex.tip)
+      }
+    }
+  })
+
+  it('reads instructions as intro, then each step in order', () => {
+    expect(instructionCues(ml, 'mini-squat')).toEqual([
+      { id: 'ex-mini-squat-intro', step: -1 },
+      { id: 'ex-mini-squat-step-1', step: 0 },
+      { id: 'ex-mini-squat-step-2', step: 1 },
+      { id: 'ex-mini-squat-step-3', step: 2 },
+    ])
+    const texts = cueTexts(en)
+    for (const { id } of instructionCues(en, 'shoulder-flexion')) expect(texts[id]).toBeTruthy()
+  })
 })
 
 describe('cuesForUpdate', () => {
@@ -32,9 +56,14 @@ describe('cuesForUpdate', () => {
     expect(cuesForUpdate(snap(), next)).toEqual({ ids: ['rep-3'], priority: 'high' })
   })
 
-  it('adds "set complete" and "rest" on the last rep of a set, "well done" on the last set', () => {
+  it('adds "set complete", "rest" and the key tip on the last rep of a set, "well done" on the last set', () => {
     const rest = snap({ status: 'rest', attempts: 1, lastAttempt: { counted: true, rep: 10 } })
-    expect(cuesForUpdate(snap(), rest).ids).toEqual(['rep-10', 'setComplete', 'rest'])
+    expect(cuesForUpdate(snap(), rest, 'shoulder-flexion').ids).toEqual([
+      'rep-10',
+      'setComplete',
+      'rest',
+      'ex-shoulder-flexion-tip',
+    ])
     const done = snap({ status: 'done', attempts: 1, lastAttempt: { counted: true, rep: 10 } })
     expect(cuesForUpdate(snap(), done).ids).toEqual(['rep-10', 'wellDone'])
   })

@@ -109,6 +109,12 @@ The app runs without them; Firebase features are disabled until they're set.
   text in `en.json` / `ml.json`; re-run it after changing that text (only changed cues are redone,
   `--force` redoes all). The session plays the pack from memory (no API calls), in the UI language,
   with a 3 s cooldown per cue; a cue missing from the pack is spoken by `speechSynthesis`.
+- **Read-aloud instructions:** the pack also holds each exercise's intro (name + setup), steps
+  and key tip. The exercise cards and Live Session have *Listen to instructions* / Pause / Stop,
+  highlighting the step being read (`useInstructions` exposes `step` for the 3D avatar to follow).
+  With *Read instructions aloud* on (default, remembered per device), Start camera reads the steps
+  first and counting begins when they finish; picking a body part reads its first exercise.
+  Between sets the exercise's tip is repeated after "set complete, rest".
 - **Voice questions (F10):** the mic on Home and Live Session records → speech-to-text →
   `POST /api/chat` (llmRouter `chat` task; knows the current exercise and the approved plan;
   exercises only). Red-flag symptoms (chest pain, severe pain, numbness, swelling, a fall…) are

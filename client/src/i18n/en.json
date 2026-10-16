@@ -147,7 +147,8 @@
         "top": "Good! Now lower slowly",
         "down": "Lower slowly",
         "partial": "Raise your arms a little higher"
-      }
+      },
+      "tip": "Keep your shoulders relaxed and your body straight."
     },
     "shoulder-flexion": {
       "name": "Shoulder flexion",
@@ -164,7 +165,8 @@
         "top": "Good! Now lower slowly",
         "down": "Lower slowly",
         "partial": "Raise your arm a little higher"
-      }
+      },
+      "tip": "Keep your back straight — don't lean back."
     },
     "mini-squat": {
       "name": "Mini squat",
@@ -181,7 +183,8 @@
         "top": "Good! Now stand up slowly",
         "down": "Stand up slowly",
         "partial": "Bend your knees a little more"
-      }
+      },
+      "tip": "Keep your knees over your toes and your chest up."
     },
     "seated-knee-extension": {
       "name": "Seated knee extension",
@@ -198,7 +201,8 @@
         "top": "Good! Now lower slowly",
         "down": "Lower your foot slowly",
         "partial": "Straighten your knee a little more"
-      }
+      },
+      "tip": "Sit tall with your back against the chair."
     }
   },
   "rules": {
@@ -488,6 +492,16 @@
       "sttUnavailable": "Voice input is not working right now. Please try again later.",
       "aiUnavailable": "Our AI helper is busy right now. Please try again in a minute.",
       "network": "Can't reach the Revive server. Check your connection and try again."
+    },
+    "instructions": {
+      "intro": "{{name}}. {{setup}}",
+      "listen": "Listen to instructions",
+      "pause": "Pause",
+      "resume": "Resume",
+      "stop": "Stop",
+      "readAloud": "Read instructions aloud",
+      "listenFirst": "Listen to the steps — counting starts when they finish.",
+      "tip": "Tip: {{tip}}"
     }
   }
 }

@@ -11,8 +11,10 @@ import { doctorName, planExercises } from '../reviews/plan.js'
 import { PlanExerciseList } from '../reviews/PlanStatus.jsx'
 import useReviews, { useSessionExercise } from '../reviews/useReviews.js'
 import { latestReviewFor, REVIEW_STATUS } from '../services/reviewService.js'
-import { preloadCues, sayCues, stopCues, unlockAudio } from '../voice/cuePlayer.js'
+import { preloadCues, sayCues, stopCues, stopInstructions, unlockAudio } from '../voice/cuePlayer.js'
 import { cuesForUpdate } from '../voice/cues.js'
+import InstructionSteps, { ReadAloudToggle } from '../voice/InstructionSteps.jsx'
+import useInstructions, { useReadAloud } from '../voice/useInstructions.js'
 import VoiceAsk from '../voice/VoiceAsk.jsx'
 
 const UI_INTERVAL_MS = 100 // push counter state to React at ~10 Hz
@@ -181,6 +183,13 @@ export default function LiveSession() {
   const [cuesOn, setCuesOn] = useState(true)
   const cuesOnRef = useRef(true)
   const assistantBusyRef = useRef(false)
+  // Instructions read aloud step by step; counting waits until they finish
+  const instructions = useInstructions(exercise?.id)
+  const [readAloud] = useReadAloud()
+  const instructionsOnRef = useRef(false)
+  useEffect(() => {
+    instructionsOnRef.current = instructions.state !== 'idle'
+  }, [instructions.state])
 
   const resetCounter = useCallback(() => {
     counterRef.current = exercise ? createRepCounter(exercise) : null
@@ -192,9 +201,9 @@ export default function LiveSession() {
 
   const onFrame = useCallback((landmarks, _angles, { width, height }) => {
     const counter = counterRef.current
-    if (!counter) return
+    if (!counter || instructionsOnRef.current) return
     const next = counter.update(landmarks, width, height)
-    const cues = cuesForUpdate(prevSnapRef.current, next)
+    const cues = cuesForUpdate(prevSnapRef.current, next, counter.exercise.id)
     prevSnapRef.current = next
     if (cues && cuesOnRef.current && !assistantBusyRef.current) sayCues(cues, i18n.language)
     // Rep finished (counted or not) or status change → update immediately; otherwise throttle
@@ -220,7 +229,11 @@ export default function LiveSession() {
 
   const onAssistantBusy = useCallback((busy) => {
     assistantBusyRef.current = busy
-    if (busy) stopCues() // don't talk over the patient or the assistant
+    if (busy) {
+      // don't talk over the patient or the assistant
+      stopCues()
+      stopInstructions()
+    }
   }, [])
 
   const { videoRef, canvasRef, status, error, angles, missing, fps, start, stop } = usePoseTracker({ onFrame })
@@ -229,11 +242,13 @@ export default function LiveSession() {
 
   function startCamera() {
     unlockAudio() // a click lets the browser play the cues
+    if (exercise && readAloud) instructions.play() // read the steps before calibration starts
     start()
   }
 
   function stopCamera() {
     stopCues()
+    instructions.stop()
     stop()
   }
 
@@ -293,7 +308,23 @@ export default function LiveSession() {
       {planLocked && <PlanLocked />}
       {!exercise && !planLocked && <ExercisePicker />}
 
-      {exercise && snap && (
+      {exercise && snap && instructions.step != null && (
+        <div role="status" aria-live="polite" className={`space-y-2 rounded-3xl px-5 py-4 shadow ${BANNER_STYLE.info}`}>
+          <div className="text-2xl font-bold sm:text-4xl">
+            {instructions.step === -1
+              ? t(`exercises.${exercise.id}.setup`)
+              : t(`exercises.${exercise.id}.steps`, { returnObjects: true })[instructions.step]}
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="text-lg text-slate-200">{t('voice.instructions.listenFirst')}</span>
+            <button type="button" className="btn bg-white px-4 py-2 text-slate-900 hover:bg-slate-100" onClick={instructions.stop}>
+              {t('voice.instructions.stop')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {exercise && snap && instructions.step == null && (
         <div
           role="status"
           aria-live="polite"
@@ -303,6 +334,11 @@ export default function LiveSession() {
         >
           <span className="text-2xl font-bold sm:text-4xl">
             {running ? tm(snap.correction) : t('session.pressStart', { setup: t(`exercises.${exercise.id}.setup`) })}
+            {snap.status === 'rest' && (
+              <span className="mt-1 block text-xl font-semibold sm:text-2xl">
+                {t('voice.instructions.tip', { tip: t(`exercises.${exercise.id}.tip`) })}
+              </span>
+            )}
           </span>
           {snap.status === 'rest' && (
             <button type="button" className="btn bg-white px-4 py-2 text-brand-800 hover:bg-brand-50" onClick={skipRest}>
@@ -380,12 +416,10 @@ export default function LiveSession() {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="card">
             <h2 className="mb-2 text-2xl font-bold">{t('session.howTo')}</h2>
-            <p className="mb-2 text-lg text-slate-600">{t(`exercises.${exercise.id}.setup`)}</p>
-            <ol className="list-decimal space-y-1 pl-6 text-lg">
-              {t(`exercises.${exercise.id}.steps`, { returnObjects: true }).map((s) => (
-                <li key={s}>{s}</li>
-              ))}
-            </ol>
+            <InstructionSteps exercise={exercise} player={instructions} />
+            <div className="mt-3">
+              <ReadAloudToggle />
+            </div>
             <p className="mt-3 text-base text-slate-400">{t('session.avatarSoon')}</p>
           </div>
           <div className="card">

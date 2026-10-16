@@ -3,9 +3,13 @@
 // are fetched and decoded when the session page opens, then played instantly
 // with Web Audio. A cue missing from the pack — or whose text has changed since
 // it was generated — is spoken by the browser's speechSynthesis instead.
+//
+// Also reads an exercise's instructions aloud step by step (playInstructions),
+// reporting the current step so the page can highlight it (and, later, the 3D
+// avatar can follow along). Session cues stay quiet while instructions play.
 
 import i18n from '../i18n/index.js'
-import { COOLDOWN_MS, cueTexts } from './cues.js'
+import { COOLDOWN_MS, cueTexts, instructionCues } from './cues.js'
 
 const SPEECH_LANG = { en: 'en-IN', ml: 'ml-IN' }
 
@@ -63,7 +67,7 @@ let context = null
 let manifestPromise = null
 const buffers = new Map() // `${lang}:${id}` → Promise<AudioBuffer | null>
 const textCache = new Map() // lang → { id: text }
-let current = null // { stop() }
+let current = null // { stop(), pause(), resume() } for what is playing now
 
 function audioContext() {
   const Ctx = typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)
@@ -115,8 +119,7 @@ function playBuffer(buffer) {
     const source = ctx.createBufferSource()
     source.buffer = buffer
     source.connect(ctx.destination)
-    source.onended = resolve
-    current = {
+    const handle = {
       stop: () => {
         try {
           source.stop()
@@ -125,7 +128,14 @@ function playBuffer(buffer) {
         }
         resolve()
       },
+      pause: () => ctx.suspend().catch(() => {}),
+      resume: () => ctx.resume().catch(() => {}),
     }
+    source.onended = () => {
+      if (current === handle) current = null
+      resolve()
+    }
+    current = handle
     source.start()
   })
 }
@@ -136,14 +146,21 @@ function speakText(text, lang) {
   return new Promise((resolve) => {
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.lang = SPEECH_LANG[lang] ?? 'en-IN'
-    utterance.onend = resolve
-    utterance.onerror = resolve
-    current = {
+    const handle = {
       stop: () => {
         synth.cancel()
         resolve()
       },
+      pause: () => synth.pause(),
+      resume: () => synth.resume(),
     }
+    const done = () => {
+      if (current === handle) current = null
+      resolve()
+    }
+    utterance.onend = done
+    utterance.onerror = done
+    current = handle
     synth.speak(utterance)
   })
 }
@@ -174,5 +191,65 @@ export function unlockAudio() {
     .catch(() => {})
 }
 
-export const sayCues = (update, lang) => queue.say(update, lang)
+/** Session cues; ignored while instructions are being read. */
+export const sayCues = (update, lang) => {
+  if (!instructions) queue.say(update, lang)
+}
 export const stopCues = () => queue.stop()
+
+// ---------- instructions, read step by step ----------
+
+const STEP_GAP_MS = 600 // pause between steps
+let instructions = null // { paused, wake, onEnd } of the one playing now
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/**
+ * Reads an exercise's intro and steps aloud, one by one. Stops anything else
+ * being read. `onStep(step)` is called as each one starts (-1 = intro, 0… =
+ * index into `steps`); `onEnd()` when finished or stopped.
+ */
+export function playInstructions(exerciseId, lang, { onStep = () => {}, onEnd = () => {} } = {}) {
+  stopInstructions()
+  queue.stop()
+  const me = { paused: false, wake: null, onEnd }
+  instructions = me
+  const items = instructionCues(i18n.getResourceBundle(lang, 'translation'), exerciseId)
+  ;(async () => {
+    for (const [i, item] of items.entries()) {
+      if (me.paused) await new Promise((resolve) => (me.wake = resolve))
+      if (instructions !== me) return
+      onStep(item.step)
+      await browserOutput.play(item.id, lang).catch(() => {})
+      if (instructions !== me) return
+      if (i < items.length - 1) await sleep(STEP_GAP_MS)
+    }
+    if (instructions === me) {
+      instructions = null
+      onEnd()
+    }
+  })()
+}
+
+export function pauseInstructions() {
+  if (!instructions || instructions.paused) return
+  instructions.paused = true
+  current?.pause?.()
+}
+
+export function resumeInstructions() {
+  if (!instructions?.paused) return
+  instructions.paused = false
+  current?.resume?.()
+  instructions.wake?.()
+}
+
+export function stopInstructions() {
+  const me = instructions
+  if (!me) return
+  instructions = null
+  browserOutput.stop()
+  if (me.paused) audioContext()?.resume().catch(() => {}) // un-suspend for the next cue
+  me.wake?.()
+  me.onEnd()
+}

@@ -1,9 +1,13 @@
+import { useEffect, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
 import useAuth from '../auth/useAuth.js'
 import { BODY_PARTS, exercisesFor } from '../exercises/library.js'
 import useReviews from '../reviews/useReviews.js'
 import { latestReviewFor, REVIEW_STATUS } from '../services/reviewService.js'
+import { preloadCues } from '../voice/cuePlayer.js'
+import InstructionSteps, { ReadAloudToggle } from '../voice/InstructionSteps.jsx'
+import useInstructions, { useReadAloud } from '../voice/useInstructions.js'
 
 const DIFFICULTY_STYLE = {
   easy: 'bg-brand-100 text-brand-800',
@@ -11,9 +15,15 @@ const DIFFICULTY_STYLE = {
   hard: 'bg-red-100 text-red-800',
 }
 
-function ExerciseCard({ exercise }) {
+// `autoPlay`: read the steps aloud as soon as the card appears (after a click, so audio may play)
+function ExerciseCard({ exercise, autoPlay }) {
   const { t } = useTranslation()
   const ex = `exercises.${exercise.id}`
+  const instructions = useInstructions(exercise.id)
+  const { play } = instructions
+  useEffect(() => {
+    if (autoPlay) play()
+  }, [autoPlay, play])
   return (
     <article className="card flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -34,14 +44,7 @@ function ExerciseCard({ exercise }) {
         </span>
         <span>{t(exercise.view === 'side' ? 'exerciseSelect.sideView' : 'exerciseSelect.frontView')}</span>
       </div>
-      <ol className="list-decimal space-y-1 pl-6 text-lg text-slate-700">
-        {t(`${ex}.steps`, { returnObjects: true }).map((s) => (
-          <li key={s}>{s}</li>
-        ))}
-      </ol>
-      <p className="text-base text-slate-500">
-        {t(`${ex}.setup`)}
-      </p>
+      <InstructionSteps exercise={exercise} player={instructions} />
       <Link to={`/session?exercise=${exercise.id}`} className="btn-primary mt-auto">
         {t('exerciseSelect.start')}
       </Link>
@@ -50,12 +53,18 @@ function ExerciseCard({ exercise }) {
 }
 
 export default function ExerciseSelect() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [params, setParams] = useSearchParams()
   const partId = params.get('part')
   const part = BODY_PARTS.find((p) => p.id === partId && p.available)
   const { user } = useAuth()
+  const [readAloud] = useReadAloud()
+  const [autoPlayPart, setAutoPlayPart] = useState(null) // body part just clicked
   const hasApprovedPlan = latestReviewFor(user.uid, useReviews())?.status === REVIEW_STATUS.APPROVED
+
+  useEffect(() => {
+    if (part) preloadCues(i18n.language)
+  }, [part, i18n.language])
 
   return (
     <section className="space-y-6">
@@ -81,7 +90,10 @@ export default function ExerciseSelect() {
               key={p.id}
               type="button"
               disabled={!p.available}
-              onClick={() => setParams({ part: p.id })}
+              onClick={() => {
+                setParams({ part: p.id })
+                setAutoPlayPart(readAloud ? p.id : null)
+              }}
               aria-pressed={selected}
               className={`rounded-3xl border-2 p-4 text-left sm:p-5 transition disabled:cursor-not-allowed disabled:opacity-60 ${
                 selected ? 'border-brand-600 bg-brand-50' : 'border-slate-200 bg-white hover:border-brand-500'
@@ -99,10 +111,13 @@ export default function ExerciseSelect() {
 
       {part ? (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold">{t('exerciseSelect.partExercises', { part: t(`bodyParts.${part.id}.name`) })}</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-2xl font-bold">{t('exerciseSelect.partExercises', { part: t(`bodyParts.${part.id}.name`) })}</h2>
+            <ReadAloudToggle />
+          </div>
           <div className="grid gap-4 md:grid-cols-2">
-            {exercisesFor(part.id).map((e) => (
-              <ExerciseCard key={e.id} exercise={e} />
+            {exercisesFor(part.id).map((e, i) => (
+              <ExerciseCard key={e.id} exercise={e} autoPlay={i === 0 && autoPlayPart === part.id} />
             ))}
           </div>
         </div>
