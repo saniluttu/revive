@@ -6,6 +6,8 @@
 //   - Gemini / Groq text: if the configured model is gone, log it and pick a current one
 //   - Gemini fallback: a second flash / flash-lite model tried before leaving Gemini
 //     (GEMINI_FALLBACK_MODEL overrides)
+//   - Ollama (local, text only): used only if GET /api/tags answers at startup and
+//     OLLAMA_MODEL is pulled; otherwise skipped
 
 const LIST_TIMEOUT_MS = 10_000
 const OPENROUTER_FALLBACKS = 3 // OpenRouter tries these in order (`models` param)
@@ -14,12 +16,18 @@ export const DEFAULTS = {
   GEMINI_MODEL: 'gemini-3.8-flash',
   GROQ_MODEL: 'llama-3.3-70b-versatile',
   GROQ_REPORT_MODEL: 'openai/gpt-oss-120b',
+  OLLAMA_MODEL: 'qwen2.5:3b',
+  OLLAMA_URL: 'http://localhost:11434',
 }
+
+export const ollamaUrl = () => (process.env.OLLAMA_URL?.trim() || DEFAULTS.OLLAMA_URL).replace(/\/+$/, '')
+const OLLAMA_CHECK_TIMEOUT_MS = 3_000
 
 // Env var to change when a provider's model for a task is wrong
 // (`index` 1 = Gemini's fallback model)
 export function modelEnvVar(provider, task, index = 0) {
   const vision = task === 'vision'
+  if (provider === 'ollama') return 'OLLAMA_MODEL'
   if (provider === 'gemini') return index > 0 ? 'GEMINI_FALLBACK_MODEL' : 'GEMINI_MODEL'
   if (provider === 'groq') return vision ? 'GROQ_VISION_MODEL' : task === 'report' ? 'GROQ_REPORT_MODEL' : 'GROQ_MODEL'
   return vision ? 'OPENROUTER_VISION_MODEL' : 'OPENROUTER_MODEL'
@@ -29,8 +37,10 @@ const env = (name) => process.env[name]?.trim() || null
 
 // provider -> { text, vision }: a model id, a list of ids (OpenRouter), or null (unavailable).
 // Gemini also has `fallback`, used for every task; Groq has `report` (report text → JSON).
-// Other providers use their text model for the report task.
+// Other providers use their text model for the report task. Ollama stays null
+// (skipped) until initModels() has found it running with the model pulled.
 const chosen = {
+  ollama: { text: null, vision: null },
   gemini: { text: null, vision: null, fallback: null },
   groq: { text: null, vision: null, report: null },
   openrouter: { text: null, vision: null },
@@ -41,6 +51,7 @@ let discovered = false
 function fromEnv() {
   const gemini = env('GEMINI_MODEL') ?? DEFAULTS.GEMINI_MODEL
   return {
+    ollama: { text: null, vision: null },
     gemini: { text: gemini, vision: gemini, fallback: env('GEMINI_FALLBACK_MODEL') },
     groq: {
       text: env('GROQ_MODEL') ?? DEFAULTS.GROQ_MODEL,
@@ -260,6 +271,28 @@ async function discoverOpenRouter(base) {
   return { text: text.length ? text : null, vision: vision.length ? vision : null }
 }
 
+// Local Ollama: is it running, and is the model pulled? Never throws.
+async function discoverOllama() {
+  const model = env('OLLAMA_MODEL') ?? DEFAULTS.OLLAMA_MODEL
+  const off = { text: null, vision: null }
+  let models
+  try {
+    const res = await fetch(`${ollamaUrl()}/api/tags`, { signal: AbortSignal.timeout(OLLAMA_CHECK_TIMEOUT_MS) })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    ;({ models = [] } = await res.json())
+  } catch (err) {
+    console.log(`[models] Ollama is not running at ${ollamaUrl()} (${err.cause?.code ?? err.message}) — skipping it.`)
+    return off
+  }
+  const names = models.flatMap((m) => [m.name, m.model]).filter(Boolean)
+  const found = names.find((n) => n === model || n === `${model}:latest`)
+  if (!found) {
+    console.warn(`[models] Ollama model "${model}" is not pulled — run \`ollama pull ${model}\` or set OLLAMA_MODEL in server/.env. Skipping Ollama.`)
+    return off
+  }
+  return { text: found, vision: null } // text tasks only; images never go to Ollama
+}
+
 /** Checks/picks models for every provider. Never throws; failures keep the env values. */
 export async function initModels() {
   const base = fromEnv()
@@ -272,12 +305,13 @@ export async function initModels() {
       return base[name]
     }
   }
-  const [gemini, groq, openrouter] = await Promise.all([
+  const [ollama, gemini, groq, openrouter] = await Promise.all([
+    discoverOllama(),
     run('gemini', discoverGemini),
     run('groq', discoverGroq),
     run('openrouter', discoverOpenRouter),
   ])
-  Object.assign(chosen, { gemini, groq, openrouter })
+  Object.assign(chosen, { ollama, gemini, groq, openrouter })
   discovered = true
 
   const show = (v) => (Array.isArray(v) ? v.join(' → ') : (v ?? 'none'))

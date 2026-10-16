@@ -4,7 +4,7 @@
 // Errors carry `status` (HTTP code) when known. Optional `retry` lists HTTP
 // statuses worth retrying on the same model, and the backoff delays.
 
-import { modelFor } from './models.js'
+import { modelFor, ollamaUrl } from './models.js'
 
 const isPdf = (img) => img.mimeType === 'application/pdf'
 const hasPdf = (req) => Boolean(req.images?.some(isPdf))
@@ -131,4 +131,27 @@ export const openrouter = {
   },
 }
 
-export const PROVIDERS = { gemini, groq, openrouter }
+// Local model via Ollama: no key, text only (report analysis, chat). Only enabled
+// when initModels() found it running with OLLAMA_MODEL pulled.
+export const ollama = {
+  name: 'ollama',
+  keyless: true,
+  timeoutMs: Number(process.env.OLLAMA_TIMEOUT_MS) || 90_000, // small local models on a CPU are slow
+  supports: (req) => Boolean(modelFor('ollama', req.task)) && !req.images?.length,
+  async call({ model, system, messages, json, timeoutMs }) {
+    const body = {
+      model,
+      messages: [...(system ? [{ role: 'system', content: system }] : []), ...messages.map(({ role, content }) => ({ role, content }))],
+      stream: false,
+      // Ollama's default context (2–4k tokens) would silently cut the prompt + report
+      options: { num_ctx: Number(process.env.OLLAMA_NUM_CTX) || 8192 },
+    }
+    if (json) body.format = 'json'
+    const data = await postJson(`${ollamaUrl()}/api/chat`, {}, body, timeoutMs)
+    const text = data.message?.content
+    if (!text) throw new Error('Ollama returned an empty response')
+    return text
+  },
+}
+
+export const PROVIDERS = { ollama, gemini, groq, openrouter }

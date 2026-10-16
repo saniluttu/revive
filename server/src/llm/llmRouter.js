@@ -18,11 +18,11 @@ const TIMEOUT_MS = {
   default: Number(process.env.LLM_TIMEOUT_MS) || 15_000,
 }
 
-// Provider order per task type
+// Provider order per task type. Ollama (local) goes first for text tasks when it's running.
 const TASK_ORDER = {
-  report: ['groq', 'gemini', 'openrouter'], // report text → JSON (Groq's fast reasoning model first)
+  report: ['ollama', 'groq', 'gemini', 'openrouter'], // report text → JSON
   vision: ['gemini', 'groq', 'openrouter'], // Groq only if it has a vision model and no PDF is attached
-  chat: ['groq', 'gemini', 'openrouter'],
+  chat: ['ollama', 'groq', 'gemini', 'openrouter'],
   text: ['gemini', 'groq', 'openrouter'],
 }
 
@@ -61,7 +61,13 @@ function shouldCoolDown(err) {
 
 // Yields available keys for a provider + model, starting at its round-robin position.
 // Cooldowns are per model: an overloaded or rate-limited model says nothing about the fallback.
+// Keyless providers (Ollama) get one pseudo key.
 function* availableKeys(provider, model) {
+  if (provider.keyless) {
+    const id = `${provider.name}:${modelName(model)}:0`
+    if (!isCoolingDown(id)) yield { id, key: null }
+    return
+  }
   const keys = keysFor(provider)
   if (!keys.length) return
   const start = rrIndex.get(provider.name) || 0
@@ -80,7 +86,7 @@ function* availableKeys(provider, model) {
  * @param {{role:'user'|'assistant', content:string}[]} req.messages
  * @param {{mimeType:string, data:string}[]} [req.images] base64 images (vision)
  * @param {boolean} [req.json] ask for a JSON response
- * @param {number} [req.timeoutMs] per-call timeout (default 60 s for vision, 15 s otherwise)
+ * @param {number} [req.timeoutMs] per-call timeout (default by task, see TIMEOUT_MS; Ollama 90 s)
  * @param {(text:string) => any} [req.parse] validates/parses the reply; if it throws,
  *   the same model is asked again (up to `parseRetries` times, with the error), then the
  *   next model / provider is tried (no cooldown — the provider itself is healthy)
@@ -88,7 +94,8 @@ function* availableKeys(provider, model) {
  * @param {(event:{type:'retrying', provider:string, model:string}) => void} [req.onEvent]
  *   progress: called before every attempt after the first (retry, fallback model or provider)
  * @param {() => string} [req.fallback] cached/demo response if all providers fail
- * @returns {Promise<{text:string, data?:any, provider:string, fallback?:boolean, message?:string}>}
+ * @returns {Promise<{text:string, data?:any, provider:string, model?:string, ms?:number, fallback?:boolean, message?:string}>}
+ *   `ms` is how long the successful call took
  */
 export async function route(req) {
   const task = req.task || 'text'
@@ -101,6 +108,7 @@ export async function route(req) {
     const provider = PROVIDERS[name]
     if (!provider.supports({ ...req, task })) continue
     const delays = provider.retry?.delaysMs ?? []
+    const callTimeoutMs = req.timeoutMs ?? provider.timeoutMs ?? timeoutMs
 
     modelLoop: for (const [modelIndex, model] of modelsFor(name, task).entries()) {
       for (const { id, key } of availableKeys(provider, model)) {
@@ -121,7 +129,7 @@ export async function route(req) {
           const started = Date.now()
           let text
           try {
-            text = await provider.call({ ...req, messages, task, key, model, timeoutMs })
+            text = await provider.call({ ...req, messages, task, key, model, timeoutMs: callTimeoutMs })
           } catch (err) {
             errors.push(`${id}: ${err.message}`)
             if (isInvalidJsonError(err)) {
@@ -165,8 +173,9 @@ export async function route(req) {
             }
             continue modelLoop // same model on another key would likely answer the same way
           }
-          console.log(`[llmRouter] ${task} answered by ${name} / ${modelName(model)} (${Date.now() - started} ms)`)
-          return { text, data, provider: name, model: modelName(model) }
+          const ms = Date.now() - started
+          console.log(`[llmRouter] ${task} answered by ${name} / ${modelName(model)} (${ms} ms)`)
+          return { text, data, provider: name, model: modelName(model), ms }
         }
       }
     }
@@ -185,11 +194,11 @@ export async function route(req) {
 export function status() {
   const models = chosenModels()
   return Object.values(PROVIDERS).map((p) => {
-    const keys = keysFor(p)
+    const keys = p.keyless ? [null] : keysFor(p)
     const cooling = keys.filter((_, i) =>
       [...keyState.keys()].some((id) => id.startsWith(`${p.name}:`) && id.endsWith(`:${i}`) && isCoolingDown(id)),
     ).length
-    return { provider: p.name, keys: keys.length, coolingDown: cooling, models: models[p.name] }
+    return { provider: p.name, keys: p.keyless ? 'none needed' : keys.length, coolingDown: cooling, models: models[p.name] }
   })
 }
 

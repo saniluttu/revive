@@ -35,8 +35,8 @@ const fromCache = (entry, message) => ({
 // → { analysis, provider, cached?, message? }  or  { error } with 4xx/503
 //
 // Text first: the report's text is extracted here (PDF text layer, or OCR for
-// photos and scanned PDFs) and only the text goes to the LLM (Groq → Gemini →
-// OpenRouter). The file itself goes to a vision model only if no text was found.
+// photos and scanned PDFs) and only the text goes to the LLM (local Ollama if
+// running → Groq → Gemini → OpenRouter). The file itself goes to a vision model only if no text was found.
 //
 // With `Accept: application/x-ndjson` the reply is streamed, one JSON per line, so
 // the page can show progress while the AI is retried:
@@ -90,7 +90,7 @@ router.post('/analyze', async (req, res) => {
         messages: [{ role: 'user', content: USER_PROMPT }],
         images: [{ name, mimeType, data }],
       })
-  if (!result.fallback) console.log(`[report] analysed by ${result.provider} / ${result.model} from ${source}`)
+  if (!result.fallback) console.log(`[report] answered by ${result.provider}:${result.model} in ${result.ms} ms (from ${source})`)
 
   let reply
   let error = null
