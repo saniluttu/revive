@@ -16,8 +16,10 @@
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.1.1",
     "firebase": "^13.0.0",
+    "i18next": "^25.10.10",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-i18next": "^15.7.4",
     "react-router-dom": "^6.30.6"
   },
   "devDependencies": {

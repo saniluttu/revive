@@ -22,14 +22,14 @@ export const VISIBILITY_THRESHOLD = 0.5
 
 // Each joint angle is measured at the middle landmark: angle(a, b, c) at b.
 export const JOINTS = [
-  { key: 'leftShoulder', label: 'Left shoulder', points: [LM.LEFT_ELBOW, LM.LEFT_SHOULDER, LM.LEFT_HIP] },
-  { key: 'rightShoulder', label: 'Right shoulder', points: [LM.RIGHT_ELBOW, LM.RIGHT_SHOULDER, LM.RIGHT_HIP] },
-  { key: 'leftElbow', label: 'Left elbow', points: [LM.LEFT_SHOULDER, LM.LEFT_ELBOW, LM.LEFT_WRIST] },
-  { key: 'rightElbow', label: 'Right elbow', points: [LM.RIGHT_SHOULDER, LM.RIGHT_ELBOW, LM.RIGHT_WRIST] },
-  { key: 'leftHip', label: 'Left hip', points: [LM.LEFT_SHOULDER, LM.LEFT_HIP, LM.LEFT_KNEE] },
-  { key: 'rightHip', label: 'Right hip', points: [LM.RIGHT_SHOULDER, LM.RIGHT_HIP, LM.RIGHT_KNEE] },
-  { key: 'leftKnee', label: 'Left knee', points: [LM.LEFT_HIP, LM.LEFT_KNEE, LM.LEFT_ANKLE] },
-  { key: 'rightKnee', label: 'Right knee', points: [LM.RIGHT_HIP, LM.RIGHT_KNEE, LM.RIGHT_ANKLE] },
+  { key: 'leftShoulder', points: [LM.LEFT_ELBOW, LM.LEFT_SHOULDER, LM.LEFT_HIP] },
+  { key: 'rightShoulder', points: [LM.RIGHT_ELBOW, LM.RIGHT_SHOULDER, LM.RIGHT_HIP] },
+  { key: 'leftElbow', points: [LM.LEFT_SHOULDER, LM.LEFT_ELBOW, LM.LEFT_WRIST] },
+  { key: 'rightElbow', points: [LM.RIGHT_SHOULDER, LM.RIGHT_ELBOW, LM.RIGHT_WRIST] },
+  { key: 'leftHip', points: [LM.LEFT_SHOULDER, LM.LEFT_HIP, LM.LEFT_KNEE] },
+  { key: 'rightHip', points: [LM.RIGHT_SHOULDER, LM.RIGHT_HIP, LM.RIGHT_KNEE] },
+  { key: 'leftKnee', points: [LM.LEFT_HIP, LM.LEFT_KNEE, LM.LEFT_ANKLE] },
+  { key: 'rightKnee', points: [LM.RIGHT_HIP, LM.RIGHT_KNEE, LM.RIGHT_ANKLE] },
 ]
 
 // Landmarks that must be in frame for a "full body" view

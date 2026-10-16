@@ -6,9 +6,12 @@
 //   - a `blockAtTarget` fault (e.g. shrug) was active as the target was crossed, or
 //   - the exercise's `mainFault` was held for most of the rep
 //
-// Pure JS (no React) so it can be unit-tested with synthetic poses.
+// Pure JS (no React) so it can be unit-tested with synthetic poses. On-screen
+// text is returned as translatable messages ({ key, values }, see i18n/message.js);
+// `reason` in history is the rule id of the wrong movement.
 
-import { extractFeatures, PART_LABELS } from './body.js'
+import { msg } from '../i18n/message.js'
+import { extractFeatures } from './body.js'
 import { RULES } from './rules.js'
 
 export const CALIBRATION_MS = 1500 // hold still in the start position to capture a baseline
@@ -41,10 +44,7 @@ function makeBaseline(samples) {
   }
 }
 
-function listParts(parts) {
-  const names = parts.map((p) => PART_LABELS[p] ?? p)
-  return names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}` : names[0]
-}
+const ruleMsg = (id) => msg(`rules.${id}`)
 
 /**
  * @param exercise  entry from library.js
@@ -53,6 +53,7 @@ function listParts(parts) {
  */
 export function createRepCounter(exercise, { now = () => performance.now(), restMs = DEFAULT_REST_MS } = {}) {
   const { rest, target, ideal } = exercise
+  const cue = (name) => msg(`exercises.${exercise.id}.cues.${name}`)
   const span = target - rest
   const hyst = span * HYSTERESIS
   const deadband = span * PATH_DEADBAND
@@ -68,13 +69,13 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
   let calibration = null // { start, samples[] }
   let rep = null // rep in progress
   let restUntil = 0
-  let message = null // { text, kind, until }
+  let message = null // { message, kind, until }
   const history = []
   const faultSince = {}
   let activeFaults = []
 
-  function say(text, kind, t, hold = MESSAGE_HOLD_MS) {
-    message = { text, kind, until: t + hold }
+  function say(m, kind, t, hold = MESSAGE_HOLD_MS) {
+    message = { ...m, kind, until: t + hold }
   }
 
   function startRep(t) {
@@ -95,7 +96,7 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
   function voidRep(reason, t) {
     if (rep.voidReason) return
     rep.voidReason = reason
-    say(`Not counted — ${reason}`, 'error', t, 2500)
+    say(msg('cues.notCounted', { reason: ruleMsg(reason) }), 'error', t, 2500)
   }
 
   // Called on each crossing of the target. A blocking fault that is already
@@ -104,7 +105,7 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
   function checkBlockAtTarget(t) {
     for (const id of exercise.blockAtTarget ?? []) {
       if (faultSince[id] == null) continue
-      if (t - faultSince[id] >= FAULT_HOLD_MS) voidRep(RULES[id].message, t)
+      if (t - faultSince[id] >= FAULT_HOLD_MS) voidRep(id, t)
       else rep.crossStreaks[id] = faultSince[id]
     }
   }
@@ -126,7 +127,7 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
         if (t - faultSince[id] >= FAULT_HOLD_MS) {
           activeFaults.push(id)
           rep.faults.add(id)
-          if (rep.crossStreaks[id] === faultSince[id]) voidRep(RULES[id].message, t)
+          if (rep.crossStreaks[id] === faultSince[id]) voidRep(id, t)
         }
       } else {
         delete faultSince[id]
@@ -146,7 +147,7 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
     if (durationMs < MIN_REP_MS) return endRep()
 
     const main = exercise.mainFault
-    if (main && (rep.faultMs[main] ?? 0) > durationMs * MAIN_FAULT_SHARE) voidRep(RULES[main].message, t)
+    if (main && (rep.faultMs[main] ?? 0) > durationMs * MAIN_FAULT_SHARE) voidRep(main, t)
     if (rep.voidReason) {
       history.push({
         set,
@@ -158,7 +159,7 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
         peak: Math.round(rep.peak * 10) / 10,
         durationMs: Math.round(durationMs),
       })
-      say(`Not counted — ${rep.voidReason}`, 'error', t, 2500)
+      say(msg('cues.notCounted', { reason: ruleMsg(rep.voidReason) }), 'error', t, 2500)
       return endRep()
     }
 
@@ -197,9 +198,9 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
       }
       return
     }
-    if (faults.length) say(`Rep ${reps} — ${RULES[faults[0]].message}`, 'warn', t)
-    else if (tooFast) say(`Rep ${reps} — good, now a little slower`, 'info', t)
-    else say(quality >= 80 ? `Great rep! That's ${reps}` : `Good — that's ${reps}`, 'good', t)
+    if (faults.length) say(msg('cues.repFault', { n: reps, reason: ruleMsg(faults[0]) }), 'warn', t)
+    else if (tooFast) say(msg('cues.repTooFast', { n: reps }), 'info', t)
+    else say(msg(quality >= 80 ? 'cues.repGreat' : 'cues.repGood', { n: reps }), 'good', t)
   }
 
   function stepPhase(f, t) {
@@ -218,7 +219,7 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
           checkBlockAtTarget(t)
         } else if (value <= rest) {
           // Came back down without reaching the target: no rep
-          if (rep.peak > rest + 2 * hyst) say(exercise.cues.partial, 'warn', t, 2500)
+          if (rep.peak > rest + 2 * hyst) say(cue('partial'), 'warn', t, 2500)
           phase = 'START'
           endRep()
         }
@@ -244,26 +245,28 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
     phase = 'START'
     status = 'active'
     endRep()
-    say(`Set ${set} — ${exercise.cues.start.toLowerCase()}`, 'info', t, 2500)
+    say(msg('cues.nextSet', { set, cue: cue('start') }), 'info', t, 2500)
   }
 
   function correction(t) {
-    if (status === 'done') return { text: 'Exercise complete — well done!', kind: 'good' }
+    const setup = msg(`exercises.${exercise.id}.setup`)
+    if (status === 'done') return { ...msg('cues.complete'), kind: 'good' }
     if (status === 'rest') {
-      const s = Math.ceil(Math.max(0, restUntil - t) / 1000)
-      return { text: `Set ${set} complete! Rest — next set in ${s}s`, kind: 'good' }
+      const seconds = Math.ceil(Math.max(0, restUntil - t) / 1000)
+      return { ...msg('cues.rest', { set, seconds }), kind: 'good' }
     }
-    if (missing.length) return { text: `Step back — make sure your ${listParts(missing)} can be seen`, kind: 'warn' }
-    if (status === 'framing') return { text: exercise.setup, kind: 'info' }
+    if (missing.length) {
+      return { ...msg('cues.stepBack', { parts: missing.map((p) => msg(`parts.${p}`)) }), kind: 'warn' }
+    }
+    if (status === 'framing') return { ...setup, kind: 'info' }
     if (status === 'calibrating') {
       return value > rest
-        ? { text: `Get into the start position. ${exercise.setup}`, kind: 'info' }
-        : { text: 'Hold still…', kind: 'info' }
+        ? { ...msg('cues.startPosition', { setup }), kind: 'info' }
+        : { ...msg('cues.holdStill'), kind: 'info' }
     }
-    if (activeFaults.length) return { text: RULES[activeFaults[0]].message, kind: 'error' }
-    if (message && t < message.until) return { text: message.text, kind: message.kind }
-    const cue = { START: 'start', UP: 'up', TOP: 'top', DOWN: 'down' }[phase]
-    return { text: exercise.cues[cue], kind: 'info' }
+    if (activeFaults.length) return { ...ruleMsg(activeFaults[0]), kind: 'error' }
+    if (message && t < message.until) return { key: message.key, values: message.values, kind: message.kind }
+    return { ...cue({ START: 'start', UP: 'up', TOP: 'top', DOWN: 'down' }[phase]), kind: 'info' }
   }
 
   function snapshot(t = now()) {
@@ -331,7 +334,7 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
           calibration = null
           status = 'active'
           phase = 'START'
-          say(`Ready! ${exercise.cues.start}`, 'good', t, 2500)
+          say(msg('cues.ready', { cue: cue('start') }), 'good', t, 2500)
         }
       }
       return snapshot(t)

@@ -1,24 +1,27 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import useAuth from '../auth/useAuth.js'
+import i18n, { setLanguage as setUiLanguage } from '../i18n/index.js'
 import { updateProfile } from '../services/authService.js'
 
 const GENDERS = [
-  { value: 'female', label: 'Female' },
-  { value: 'male', label: 'Male' },
-  { value: 'other', label: 'Other' },
+  { value: 'female', label: 'profile.female' },
+  { value: 'male', label: 'profile.male' },
+  { value: 'other', label: 'profile.other' },
 ]
 
 const LANGUAGES = [
-  { value: 'ml', label: 'മലയാളം', hint: 'Malayalam' },
-  { value: 'en', label: 'English', hint: 'English' },
+  { value: 'ml', label: 'profile.malayalam', hint: 'profile.malayalamHint', lang: 'ml' },
+  { value: 'en', label: 'profile.english', hint: 'profile.englishHint', lang: 'en' },
 ]
 
 function ChoiceGroup({ legend, name, options, value, onChange }) {
+  const { t } = useTranslation()
   return (
     <fieldset>
       <legend className="mb-2 text-lg font-semibold">{legend}</legend>
-      <div className={`grid gap-3 ${options.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+      <div className={`grid gap-3 ${options.length === 3 ? 'grid-cols-1 min-[400px]:grid-cols-3' : 'grid-cols-2'}`}>
         {options.map((o) => (
           <label
             key={o.value}
@@ -34,8 +37,10 @@ function ChoiceGroup({ legend, name, options, value, onChange }) {
               onChange={() => onChange(o.value)}
               className="sr-only"
             />
-            <span className="block text-xl font-bold">{o.label}</span>
-            {o.hint && o.hint !== o.label && <span className="block text-base text-slate-600">{o.hint}</span>}
+            <span lang={o.lang} className="block text-xl font-bold">
+              {t(o.label)}
+            </span>
+            {o.hint && t(o.hint) !== t(o.label) && <span className="block text-base text-slate-600">{t(o.hint)}</span>}
           </label>
         ))}
       </div>
@@ -44,6 +49,7 @@ function ChoiceGroup({ legend, name, options, value, onChange }) {
 }
 
 export default function Profile() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const navigate = useNavigate()
   const existing = user?.profile
@@ -52,8 +58,8 @@ export default function Profile() {
   const [name, setName] = useState(existing?.name ?? '')
   const [age, setAge] = useState(existing?.age?.toString() ?? '')
   const [gender, setGender] = useState(existing?.gender ?? '')
-  const [language, setLanguage] = useState(existing?.language ?? 'ml')
-  const [error, setError] = useState(null)
+  const [language, setLanguage] = useState(existing?.language ?? i18n.language)
+  const [error, setError] = useState(null) // i18n key
   const [saved, setSaved] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -63,17 +69,18 @@ export default function Profile() {
     setSaved(false)
 
     const ageNum = Number(age)
-    if (!name.trim()) return setError('Please enter your name.')
-    if (!Number.isInteger(ageNum) || ageNum < 1 || ageNum > 120) return setError('Please enter a valid age.')
-    if (!gender) return setError('Please choose your gender.')
+    if (!name.trim()) return setError('profile.nameRequired')
+    if (!Number.isInteger(ageNum) || ageNum < 1 || ageNum > 120) return setError('profile.ageInvalid')
+    if (!gender) return setError('profile.genderRequired')
 
     setBusy(true)
     try {
       await updateProfile({ name: name.trim(), age: ageNum, gender, language })
+      setUiLanguage(language)
       if (isSetup) navigate('/home', { replace: true })
       else setSaved(true)
     } catch (err) {
-      setError(err.message)
+      setError(`errors.${err.code ?? 'unknown'}`)
     } finally {
       setBusy(false)
     }
@@ -82,20 +89,20 @@ export default function Profile() {
   return (
     <section className="mx-auto max-w-lg space-y-6">
       <div>
-        <h1 className="text-3xl font-bold sm:text-4xl">{isSetup ? 'Set up your profile' : 'Your profile'}</h1>
+        <h1 className="text-3xl font-bold sm:text-4xl">{isSetup ? t('profile.setupTitle') : t('profile.title')}</h1>
         <p className="mt-2 text-xl text-slate-600">
-          {isSetup ? 'Tell us a little about yourself to get started.' : user?.email}
+          {isSetup ? t('profile.setupSubtitle') : user?.email}
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="card space-y-5">
         <label className="block">
-          <span className="mb-1 block text-lg font-semibold">Name</span>
+          <span className="mb-1 block text-lg font-semibold">{t('profile.name')}</span>
           <input className="input" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} required />
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-lg font-semibold">Age</span>
+          <span className="mb-1 block text-lg font-semibold">{t('profile.age')}</span>
           <input
             className="input w-32"
             type="number"
@@ -108,22 +115,22 @@ export default function Profile() {
           />
         </label>
 
-        <ChoiceGroup legend="Gender" name="gender" options={GENDERS} value={gender} onChange={setGender} />
-        <ChoiceGroup legend="Preferred language" name="language" options={LANGUAGES} value={language} onChange={setLanguage} />
+        <ChoiceGroup legend={t('profile.gender')} name="gender" options={GENDERS} value={gender} onChange={setGender} />
+        <ChoiceGroup legend={t('profile.language')} name="language" options={LANGUAGES} value={language} onChange={setLanguage} />
 
         {error && (
           <div role="alert" className="rounded-2xl bg-red-50 p-4 text-lg font-semibold text-red-800 ring-1 ring-red-200">
-            {error}
+            {t(error, { defaultValue: t('errors.unknown') })}
           </div>
         )}
         {saved && (
           <div role="status" className="rounded-2xl bg-brand-50 p-4 text-lg font-semibold text-brand-800 ring-1 ring-brand-100">
-            Profile saved.
+            {t('profile.saved')}
           </div>
         )}
 
         <button type="submit" className="btn-primary w-full" disabled={busy}>
-          {busy ? 'Saving…' : isSetup ? 'Continue' : 'Save changes'}
+          {busy ? t('common.saving') : isSetup ? t('profile.continue') : t('profile.save')}
         </button>
       </form>
     </section>

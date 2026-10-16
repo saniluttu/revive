@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
 import { EXERCISES, getExercise } from '../exercises/library.js'
 import { createRepCounter } from '../exercises/repCounter.js'
-import { RULES } from '../exercises/rules.js'
+import useMessage from '../i18n/useMessage.js'
 import { JOINTS } from '../pose/angles.js'
 import usePoseTracker from '../pose/usePoseTracker.js'
 
@@ -32,49 +33,52 @@ function StatTile({ label, children, className = '' }) {
 }
 
 function RangeMeter({ exercise, value }) {
+  const { t } = useTranslation()
   const [lo, hi] = exercise.meter
   const pct = (v) => `${Math.min(100, Math.max(0, ((v - lo) / (hi - lo)) * 100))}%`
   const reached = value != null && value >= exercise.target
   return (
     <div className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
       <div className="flex justify-between text-base font-semibold text-slate-600">
-        <span>{exercise.metricLabel}</span>
-        <span className="tabular-nums">{value == null ? '—' : `${Math.round(value)}${exercise.unit}`}</span>
+        <span>{t(`exercises.${exercise.id}.metricLabel`)}</span>
+        <span className="tabular-nums">{value == null ? t('common.dash') : `${Math.round(value)}${exercise.unit}`}</span>
       </div>
       <div className="relative mt-2 h-6 overflow-hidden rounded-full bg-slate-100">
         <div
           className={`absolute inset-y-0 left-0 rounded-full transition-[width] duration-100 ${reached ? 'bg-brand-500' : 'bg-sky-500'}`}
           style={{ width: value == null ? 0 : pct(value) }}
         />
-        <div className="absolute inset-y-0 w-1 bg-slate-900" style={{ left: pct(exercise.target) }} title="Target" />
+        <div className="absolute inset-y-0 w-1 bg-slate-900" style={{ left: pct(exercise.target) }} title={t('session.target')} />
       </div>
-      <div className="mt-1 text-sm text-slate-500">Black line = target</div>
+      <div className="mt-1 text-sm text-slate-500">{t('session.targetHint')}</div>
     </div>
   )
 }
 
 function ExercisePicker() {
+  const { t } = useTranslation()
   return (
     <div className="space-y-4">
-      <p className="text-xl text-slate-600">Pick an exercise to start.</p>
+      <p className="text-xl text-slate-600">{t('session.pickExercise')}</p>
       <div className="grid gap-3 sm:grid-cols-2">
         {EXERCISES.map((e) => (
           <Link key={e.id} to={`?exercise=${e.id}`} className="card block transition hover:ring-brand-500">
-            <div className="text-2xl font-bold">{e.name}</div>
+            <div className="text-2xl font-bold">{t(`exercises.${e.id}.name`)}</div>
             <div className="mt-1 text-lg text-slate-600">
-              {e.reps} reps × {e.sets} sets · {e.difficulty}
+              {t('session.repsSetsDifficulty', { reps: e.reps, sets: e.sets, difficulty: t(`difficulty.${e.difficulty}`) })}
             </div>
           </Link>
         ))}
       </div>
       <Link to="/exercises" className="inline-block text-lg font-semibold text-brand-700 underline">
-        Browse by body part
+        {t('session.browse')}
       </Link>
     </div>
   )
 }
 
 function SessionDone({ snap, onRestart }) {
+  const { t } = useTranslation()
   const counted = snap.history.filter((r) => r.counted)
   const notCounted = snap.history.length - counted.length
   const avg = Math.round(counted.reduce((s, r) => s + r.quality, 0) / (counted.length || 1))
@@ -82,37 +86,33 @@ function SessionDone({ snap, onRestart }) {
   for (const r of snap.history) for (const f of r.faults) faultCounts[f] = (faultCounts[f] ?? 0) + 1
   return (
     <div className="card space-y-4">
-      <h2 className="text-3xl font-bold text-brand-800">Well done!</h2>
+      <h2 className="text-3xl font-bold text-brand-800">{t('session.wellDone')}</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <StatTile label="Total reps">{snap.totalReps}</StatTile>
-        <StatTile label="Sets">{snap.sets}</StatTile>
-        <StatTile label="Avg quality" className={qualityColor(avg)}>
+        <StatTile label={t('session.totalReps')}>{snap.totalReps}</StatTile>
+        <StatTile label={t('session.sets')}>{snap.sets}</StatTile>
+        <StatTile label={t('session.avgQuality')} className={qualityColor(avg)}>
           {avg}
         </StatTile>
       </div>
       {notCounted > 0 && (
-        <p className="text-lg font-semibold text-red-700">
-          {notCounted} {notCounted === 1 ? 'rep was' : 'reps were'} not counted because of a wrong movement.
-        </p>
+        <p className="text-lg font-semibold text-red-700">{t('session.notCountedSummary', { count: notCounted })}</p>
       )}
       {Object.keys(faultCounts).length > 0 && (
         <div className="text-lg">
-          <div className="font-semibold">Things to work on:</div>
+          <div className="font-semibold">{t('session.workOn')}</div>
           <ul className="list-disc pl-6 text-slate-700">
             {Object.entries(faultCounts).map(([id, n]) => (
-              <li key={id}>
-                {RULES[id].message} ({n} {n === 1 ? 'rep' : 'reps'})
-              </li>
+              <li key={id}>{t('session.faultCount', { message: t(`rules.${id}`), count: n })}</li>
             ))}
           </ul>
         </div>
       )}
       <div className="flex flex-wrap gap-3">
         <button type="button" className="btn-primary" onClick={onRestart}>
-          Do it again
+          {t('session.again')}
         </button>
         <Link to="/exercises" className="btn-secondary">
-          Choose another exercise
+          {t('session.another')}
         </Link>
       </div>
     </div>
@@ -120,6 +120,8 @@ function SessionDone({ snap, onRestart }) {
 }
 
 export default function LiveSession() {
+  const { t } = useTranslation()
+  const tm = useMessage()
   const [params, setParams] = useSearchParams()
   const exercise = getExercise(params.get('exercise'))
 
@@ -158,18 +160,18 @@ export default function LiveSession() {
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-bold sm:text-4xl">{exercise ? exercise.name : 'Live Session'}</h1>
+        <div className="min-w-0">
+          <h1 className="text-3xl font-bold sm:text-4xl">{exercise ? t(`exercises.${exercise.id}.name`) : t('session.title')}</h1>
           {exercise && (
             <select
-              className="mt-2 rounded-xl border-2 border-slate-300 bg-white px-3 py-2 text-lg"
+              className="mt-2 max-w-full rounded-xl border-2 border-slate-300 bg-white px-3 py-2 text-lg"
               value={exercise.id}
               onChange={(e) => setParams({ exercise: e.target.value })}
-              aria-label="Exercise"
+              aria-label={t('session.exercise')}
             >
               {EXERCISES.map((e) => (
                 <option key={e.id} value={e.id}>
-                  {e.name}
+                  {t(`exercises.${e.id}.name`)}
                 </option>
               ))}
             </select>
@@ -177,18 +179,18 @@ export default function LiveSession() {
         </div>
         {running ? (
           <button className="btn-secondary" onClick={stop}>
-            Stop camera
+            {t('session.stopCamera')}
           </button>
         ) : (
           <button className="btn-primary" onClick={start} disabled={status === 'loading'}>
-            {status === 'loading' ? 'Starting…' : 'Start camera'}
+            {status === 'loading' ? t('session.starting') : t('session.startCamera')}
           </button>
         )}
       </div>
 
       {error && (
         <div role="alert" className="rounded-2xl bg-red-50 p-4 text-lg font-semibold text-red-800 ring-1 ring-red-200">
-          {error}
+          {tm(error)}
         </div>
       )}
 
@@ -203,11 +205,11 @@ export default function LiveSession() {
           }`}
         >
           <span className="text-2xl font-bold sm:text-4xl">
-            {running ? snap.correction.text : `Press "Start camera". ${exercise.setup}`}
+            {running ? tm(snap.correction) : t('session.pressStart', { setup: t(`exercises.${exercise.id}.setup`) })}
           </span>
           {snap.status === 'rest' && (
             <button type="button" className="btn bg-white px-4 py-2 text-brand-800 hover:bg-brand-50" onClick={skipRest}>
-              Start next set now
+              {t('session.nextSetNow')}
             </button>
           )}
         </div>
@@ -223,13 +225,13 @@ export default function LiveSession() {
 
           {!running && (
             <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-xl text-slate-300">
-              {status === 'loading' ? 'Loading pose model…' : 'Press "Start camera" to begin'}
+              {status === 'loading' ? t('session.loadingModel') : t('session.pressStartShort')}
             </div>
           )}
 
           {running && framingWarning && (
             <div className="absolute inset-x-3 top-3 rounded-2xl bg-amber-400 px-4 py-3 text-center text-xl font-bold text-amber-950 shadow-lg">
-              Step back — full body not visible
+              {t('session.framing')}
             </div>
           )}
 
@@ -241,31 +243,33 @@ export default function LiveSession() {
 
           {running && exercise && snap?.viewMismatch && !framingWarning && (
             <div className="absolute inset-x-3 bottom-3 rounded-2xl bg-black/70 px-4 py-2 text-center text-lg text-white">
-              Tip: {exercise.view === 'side' ? 'turn side-on to the camera' : 'face the camera'} for best tracking
+              {t(exercise.view === 'side' ? 'session.tipSide' : 'session.tipFront')}
             </div>
           )}
 
           {running && (
-            <div className="absolute right-3 top-3 rounded-lg bg-black/60 px-2 py-1 text-sm text-white">{fps} fps</div>
+            <div className="absolute right-3 top-3 rounded-lg bg-black/60 px-2 py-1 text-sm text-white">{t('session.fps', { fps })}</div>
           )}
         </div>
 
         {exercise && snap && (
           <div className="grid content-start gap-4">
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-1">
-              <StatTile label="Reps">
+              <StatTile label={t('session.reps')}>
                 {snap.reps}
                 <span className="text-3xl text-slate-400">/{snap.targetReps}</span>
               </StatTile>
-              <StatTile label="Set">
+              <StatTile label={t('session.set')}>
                 {snap.set}
                 <span className="text-3xl text-slate-400">/{snap.sets}</span>
               </StatTile>
             </div>
-            <StatTile label="Last rep quality" className={qualityColor(snap.lastRep?.quality)}>
-              {snap.lastRep?.quality ?? '—'}
+            <StatTile label={t('session.lastQuality')} className={qualityColor(snap.lastRep?.quality)}>
+              {snap.lastRep?.quality ?? t('common.dash')}
               {snap.setAverage != null && (
-                <span className="mt-1 block text-lg font-semibold text-slate-500">Set average {snap.setAverage}</span>
+                <span className="mt-1 block text-lg font-semibold text-slate-500">
+                  {t('session.setAverage', { avg: snap.setAverage })}
+                </span>
               )}
             </StatTile>
             <RangeMeter exercise={exercise} value={running ? snap.value : null} />
@@ -276,24 +280,24 @@ export default function LiveSession() {
       {exercise && (
         <div className="grid gap-4 md:grid-cols-2">
           <div className="card">
-            <h2 className="mb-2 text-2xl font-bold">How to do it</h2>
-            <p className="mb-2 text-lg text-slate-600">{exercise.setup}</p>
+            <h2 className="mb-2 text-2xl font-bold">{t('session.howTo')}</h2>
+            <p className="mb-2 text-lg text-slate-600">{t(`exercises.${exercise.id}.setup`)}</p>
             <ol className="list-decimal space-y-1 pl-6 text-lg">
-              {exercise.steps.map((s) => (
+              {t(`exercises.${exercise.id}.steps`, { returnObjects: true }).map((s) => (
                 <li key={s}>{s}</li>
               ))}
             </ol>
-            <p className="mt-3 text-base text-slate-400">Avatar demonstration coming soon.</p>
+            <p className="mt-3 text-base text-slate-400">{t('session.avatarSoon')}</p>
           </div>
           <div className="card">
-            <h2 className="mb-3 text-2xl font-bold">Reps so far</h2>
+            <h2 className="mb-3 text-2xl font-bold">{t('session.repsSoFar')}</h2>
             {snap?.history.length ? (
               <div className="flex flex-wrap gap-2">
                 {snap.history.map((r, i) =>
                   r.counted ? (
                     <span
                       key={i}
-                      title={r.faults.map((f) => RULES[f].message).join(', ') || 'Good form'}
+                      title={r.faults.map((f) => t(`rules.${f}`)).join(', ') || t('session.goodForm')}
                       className={`rounded-xl px-3 py-2 text-lg font-bold ring-1 ring-slate-200 ${qualityColor(r.quality)}`}
                     >
                       {r.set}.{r.rep}: {r.quality}
@@ -301,26 +305,26 @@ export default function LiveSession() {
                     </span>
                   ) : (
                     <span key={i} className="rounded-xl bg-red-50 px-3 py-2 text-lg font-semibold text-red-800 ring-1 ring-red-200">
-                      ✕ Not counted — {r.reason}
+                      {t('session.notCounted', { reason: t(`rules.${r.reason}`) })}
                     </span>
                   ),
                 )}
               </div>
             ) : (
-              <p className="text-lg text-slate-500">No reps yet.</p>
+              <p className="text-lg text-slate-500">{t('session.noReps')}</p>
             )}
           </div>
         </div>
       )}
 
       <details className="card">
-        <summary className="cursor-pointer text-xl font-bold">Joint angles</summary>
+        <summary className="cursor-pointer text-xl font-bold">{t('session.jointAngles')}</summary>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {JOINTS.map((j) => (
             <div key={j.key} className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
-              <div className="text-base font-semibold text-slate-600">{j.label}</div>
+              <div className="text-base font-semibold text-slate-600">{t(`joints.${j.key}`)}</div>
               <div className="text-2xl font-bold tabular-nums">
-                {angles[j.key] == null ? '—' : `${Math.round(angles[j.key])}°`}
+                {angles[j.key] == null ? t('common.dash') : `${Math.round(angles[j.key])}°`}
               </div>
             </div>
           ))}

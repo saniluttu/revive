@@ -1,5 +1,7 @@
+import { useTranslation } from 'react-i18next'
 import Placeholder from '../components/Placeholder.jsx'
 
 export default function CaregiverDashboard() {
-  return <Placeholder title="Caregiver Dashboard" subtitle="See your family member's progress and download the report." />
+  const { t } = useTranslation()
+  return <Placeholder title={t('pages.caregiver.title')} subtitle={t('pages.caregiver.subtitle')} />
 }

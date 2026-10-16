@@ -11,11 +11,14 @@
 //                 most of the rep is not counted
 // blockAtTarget – faults that void the rep if active as the target is crossed
 
+// Names, conditions, setup, steps, metric labels and cues are in i18n
+// (`bodyParts.<id>`, `exercises.<id>`); difficulty is a key into `difficulty.*`.
+
 export const BODY_PARTS = [
-  { id: 'shoulder', name: 'Shoulder', conditions: 'Frozen shoulder, rotator cuff', available: true },
-  { id: 'knee', name: 'Knee', conditions: 'Osteoarthritis, after surgery', available: true },
-  { id: 'lower-back', name: 'Lower back', conditions: 'Low back pain, disc issues', available: false },
-  { id: 'neck', name: 'Neck', conditions: 'Cervical spondylosis', available: false },
+  { id: 'shoulder', available: true },
+  { id: 'knee', available: true },
+  { id: 'lower-back', available: false },
+  { id: 'neck', available: false },
 ]
 
 const maxOf = (...values) => {
@@ -45,24 +48,16 @@ export const EXERCISES = [
   {
     id: 'shoulder-abduction',
     bodyPart: 'shoulder',
-    name: 'Shoulder abduction',
-    difficulty: 'Easy',
+    difficulty: 'easy',
     reps: 10,
     sets: 2,
     view: 'front',
-    setup: 'Stand facing the camera with your arms by your sides.',
-    steps: [
-      'Raise your arms out to the sides, up to shoulder height',
-      'Keep your elbows straight and shoulders relaxed',
-      'Lower slowly back down',
-    ],
     required: ['shoulder', 'elbow', 'hip'],
     // Hip–shoulder–elbow angle of the moving (higher) arm. The vertex is the live
     // shoulder: when a shrug lifts the shoulder and arm together the angle stays
     // the same, whereas a fixed calibrated vertex would read the lifted elbow as
     // extra abduction.
     metric: (f) => maxOf(f.sides.left.shoulderAngle, f.sides.right.shoulderAngle),
-    metricLabel: 'Arm height',
     unit: '°',
     rest: 30,
     target: 85,
@@ -71,35 +66,20 @@ export const EXERCISES = [
     rules: ['leanSideways', 'shrug'],
     mainFault: 'shrug',
     blockAtTarget: ['shrug'],
-    cues: {
-      start: 'Raise your arms out to the sides',
-      up: 'Keep going — up to shoulder height',
-      top: 'Good! Now lower slowly',
-      down: 'Lower slowly',
-      partial: 'Raise your arms a little higher',
-    },
   },
   {
     id: 'shoulder-flexion',
     bodyPart: 'shoulder',
-    name: 'Shoulder flexion',
-    difficulty: 'Easy',
+    difficulty: 'easy',
     reps: 10,
     sets: 2,
     view: 'side',
-    setup: 'Stand side-on to the camera with your arms by your sides.',
-    steps: [
-      'Raise your arm forward and up, thumb pointing up',
-      'Keep your back straight — do not lean back',
-      'Lower slowly back down',
-    ],
     required: ['shoulder', 'elbow', 'hip'],
     // Hip–shoulder–elbow angle of the moving (higher) arm. The vertex is the live
     // shoulder: when a shrug lifts the shoulder and arm together the angle stays
     // the same, whereas a fixed calibrated vertex would read the lifted elbow as
     // extra abduction.
     metric: (f) => maxOf(f.sides.left.shoulderAngle, f.sides.right.shoulderAngle),
-    metricLabel: 'Arm height',
     unit: '°',
     rest: 30,
     target: 85,
@@ -107,31 +87,16 @@ export const EXERCISES = [
     meter: [0, 150],
     rules: ['shrug', 'backArch'],
     mainFault: 'backArch',
-    cues: {
-      start: 'Raise your arm forward',
-      up: 'Keep going — reach forward and up',
-      top: 'Good! Now lower slowly',
-      down: 'Lower slowly',
-      partial: 'Raise your arm a little higher',
-    },
   },
   {
     id: 'mini-squat',
     bodyPart: 'knee',
-    name: 'Mini squat',
-    difficulty: 'Medium',
+    difficulty: 'medium',
     reps: 10,
     sets: 2,
     view: 'front',
-    setup: 'Stand facing the camera, feet hip-width apart. Hold a chair if needed.',
-    steps: [
-      'Bend your knees a little, as if starting to sit',
-      'Keep your knees over your toes and chest up',
-      'Stand back up slowly',
-    ],
     required: ['shoulder', 'hip', 'knee', 'ankle'],
     metric: squatDepth,
-    metricLabel: 'Squat depth',
     unit: '%',
     rest: 2.5,
     target: 5.5,
@@ -139,31 +104,16 @@ export const EXERCISES = [
     meter: [0, 12],
     rules: ['kneesIn', 'leanForward'],
     mainFault: 'kneesIn',
-    cues: {
-      start: 'Bend your knees slowly',
-      up: 'A little lower',
-      top: 'Good! Now stand up slowly',
-      down: 'Stand up slowly',
-      partial: 'Bend your knees a little more',
-    },
   },
   {
     id: 'seated-knee-extension',
     bodyPart: 'knee',
-    name: 'Seated knee extension',
-    difficulty: 'Easy',
+    difficulty: 'easy',
     reps: 10,
     sets: 2,
     view: 'side',
-    setup: 'Sit on a chair side-on to the camera, feet on the floor.',
-    steps: [
-      'Straighten one knee, lifting your foot forward',
-      'Hold for a moment with your back against the chair',
-      'Lower your foot slowly',
-    ],
     required: ['shoulder', 'hip', 'knee', 'ankle'],
     metric: (f) => maxOf(f.sides.left.kneeAngle, f.sides.right.kneeAngle),
-    metricLabel: 'Knee straightness',
     unit: '°',
     rest: 115,
     target: 145,
@@ -171,13 +121,6 @@ export const EXERCISES = [
     meter: [80, 180],
     rules: ['leanBack'],
     mainFault: 'leanBack',
-    cues: {
-      start: 'Straighten your knee',
-      up: 'Keep straightening',
-      top: 'Good! Now lower slowly',
-      down: 'Lower your foot slowly',
-      partial: 'Straighten your knee a little more',
-    },
   },
 ]
 

@@ -1,26 +1,28 @@
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import useAuth from '../auth/useAuth.js'
 
 const ACTIONS = [
-  { to: '/session', title: 'Start exercising', text: 'Live session with rep counting and form check' },
-  { to: '/exercises', title: 'Choose exercises', text: 'Pick a body part and exercise' },
-  { to: '/report', title: 'Upload report', text: 'Get exercise suggestions from your MRI report' },
-  { to: '/progress', title: 'My progress', text: 'See how you are improving' },
+  { to: '/session', title: 'home.startTitle', text: 'home.startText' },
+  { to: '/exercises', title: 'home.chooseTitle', text: 'home.chooseText' },
+  { to: '/report', title: 'home.reportTitle', text: 'home.reportText' },
+  { to: '/progress', title: 'home.progressTitle', text: 'home.progressText' },
 ]
 
 export default function PatientHome() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const name = user?.profile?.name
 
   return (
     <section className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold sm:text-4xl">Hello{name ? `, ${name}` : ''}!</h1>
-          <p className="mt-1 text-xl text-slate-600">What would you like to do today?</p>
+        <div className="min-w-0">
+          <h1 className="text-3xl font-bold sm:text-4xl">{name ? t('home.helloName', { name }) : t('home.hello')}</h1>
+          <p className="mt-1 text-xl text-slate-600">{t('home.subtitle')}</p>
         </div>
         <Link to="/profile" className="btn-secondary px-4 py-2 text-base">
-          Edit profile
+          {t('home.editProfile')}
         </Link>
       </div>
 
@@ -33,8 +35,8 @@ export default function PatientHome() {
               i === 0 ? 'bg-brand-600 text-white ring-brand-600' : ''
             }`}
           >
-            <div className="text-2xl font-bold">{a.title}</div>
-            <div className={`mt-1 text-lg ${i === 0 ? 'text-brand-50' : 'text-slate-600'}`}>{a.text}</div>
+            <div className="text-2xl font-bold">{t(a.title)}</div>
+            <div className={`mt-1 text-lg ${i === 0 ? 'text-brand-50' : 'text-slate-600'}`}>{t(a.text)}</div>
           </Link>
         ))}
       </div>

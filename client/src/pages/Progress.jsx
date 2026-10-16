@@ -1,5 +1,7 @@
+import { useTranslation } from 'react-i18next'
 import Placeholder from '../components/Placeholder.jsx'
 
 export default function Progress() {
-  return <Placeholder title="Progress" subtitle="Your quality trend, reps per day, pain trend and streak." />
+  const { t } = useTranslation()
+  return <Placeholder title={t('pages.progress.title')} subtitle={t('pages.progress.subtitle')} />
 }

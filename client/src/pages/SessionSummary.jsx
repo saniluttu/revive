@@ -1,5 +1,7 @@
+import { useTranslation } from 'react-i18next'
 import Placeholder from '../components/Placeholder.jsx'
 
 export default function SessionSummary() {
-  return <Placeholder title="Session Summary" subtitle="Reps, quality and pain level for this session." />
+  const { t } = useTranslation()
+  return <Placeholder title={t('pages.summary.title')} subtitle={t('pages.summary.subtitle')} />
 }

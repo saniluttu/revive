@@ -23,13 +23,8 @@ const SIDES = {
   },
 }
 
-export const PART_LABELS = {
-  shoulder: 'shoulders',
-  elbow: 'elbows',
-  hip: 'hips',
-  knee: 'knees',
-  ankle: 'feet',
-}
+// Body parts that must be visible; names are in i18n `parts.*`
+export const PARTS = ['shoulder', 'elbow', 'hip', 'knee', 'ankle']
 
 // Shoulder width / torso length above this means the person faces the camera.
 const FRONT_VIEW_RATIO = 0.45
@@ -66,7 +61,7 @@ export function extractFeatures(landmarks, width, height) {
       .map(pt)
 
   const visible = {}
-  for (const part of Object.keys(PART_LABELS)) visible[part] = visiblePts(part).length > 0
+  for (const part of PARTS) visible[part] = visiblePts(part).length > 0
 
   const sides = {}
   for (const [name, s] of Object.entries(SIDES)) {

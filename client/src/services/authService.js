@@ -21,6 +21,13 @@ export const ROLES = {
 const USERS_KEY = 'revive.users' // { [email]: { ...User, password } }
 const SESSION_KEY = 'revive.session' // uid of the logged-in user
 
+/** Errors carry a `code`; the UI shows i18n `errors.<code>`. */
+function authError(code) {
+  const err = new Error(code)
+  err.code = code
+  return err
+}
+
 const listeners = new Set()
 let state = { user: readSessionUser(), loading: false }
 
@@ -69,12 +76,12 @@ window.addEventListener('storage', (e) => {
 /** @returns {Promise<User>} */
 export async function signUp({ email, password, role }) {
   email = normaliseEmail(email)
-  if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error('Please enter a valid email address.')
-  if (!password || password.length < 6) throw new Error('Password must be at least 6 characters.')
-  if (!Object.values(ROLES).includes(role)) throw new Error('Please choose Patient or Caregiver.')
+  if (!/^\S+@\S+\.\S+$/.test(email)) throw authError('invalidEmail')
+  if (!password || password.length < 6) throw authError('weakPassword')
+  if (!Object.values(ROLES).includes(role)) throw authError('invalidRole')
 
   const users = readUsers()
-  if (users[email]) throw new Error('An account with this email already exists. Please log in.')
+  if (users[email]) throw authError('emailInUse')
 
   const record = { uid: newUid(), email, password, role, profile: null, createdAt: new Date().toISOString() }
   users[email] = record
@@ -88,7 +95,7 @@ export async function signUp({ email, password, role }) {
 /** @returns {Promise<User>} */
 export async function logIn({ email, password }) {
   const record = readUsers()[normaliseEmail(email)]
-  if (!record || record.password !== password) throw new Error('Incorrect email or password.')
+  if (!record || record.password !== password) throw authError('wrongPassword')
   localStorage.setItem(SESSION_KEY, record.uid)
   const user = publicUser(record)
   setState({ user, loading: false })
@@ -103,7 +110,7 @@ export async function logOut() {
 /** Merge fields into the logged-in user's profile. @returns {Promise<User>} */
 export async function updateProfile(patch) {
   const current = state.user
-  if (!current) throw new Error('You are not logged in.')
+  if (!current) throw authError('notLoggedIn')
   const users = readUsers()
   const record = users[current.email]
   record.profile = { ...record.profile, ...patch }

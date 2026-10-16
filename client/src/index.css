@@ -10,11 +10,20 @@
   body {
     @apply bg-slate-50 text-slate-900 antialiased;
   }
+  /* Malayalam: its own font first, and taller lines for the stacked vowel signs.
+     `lang` is set on <html> by i18n/index.js and on the toggle labels. */
+  :lang(ml) {
+    font-family: 'Noto Sans Malayalam', 'Noto Sans', system-ui, sans-serif;
+  }
+  html:lang(ml) body {
+    line-height: 1.6;
+    overflow-wrap: break-word;
+  }
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-lg font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/40 disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-center text-lg font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/40 disabled:opacity-50;
   }
   .btn-primary {
     @apply btn bg-brand-600 text-white hover:bg-brand-700;

@@ -1,5 +1,6 @@
 import { DrawingUtils, FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { msg } from '../i18n/message.js'
 import { computeJointAngles, missingKeyLandmarks } from './angles.js'
 
 const WASM_PATH = '/mediapipe/wasm'
@@ -36,7 +37,7 @@ export default function usePoseTracker({ onFrame } = {}) {
   onFrameRef.current = onFrame
 
   const [status, setStatus] = useState('idle') // idle | loading | running | error
-  const [error, setError] = useState(null)
+  const [error, setError] = useState(null) // i18n Message
   const [angles, setAngles] = useState({})
   const [missing, setMissing] = useState([])
   const [fps, setFps] = useState(0)
@@ -74,10 +75,10 @@ export default function usePoseTracker({ onFrame } = {}) {
       streamRef.current = null
       setError(
         err.name === 'NotAllowedError'
-          ? 'Camera permission was denied. Please allow camera access and try again.'
+          ? msg('camera.denied')
           : err.name === 'NotFoundError'
-            ? 'No camera found on this device.'
-            : `Could not start pose tracking: ${err.message}`,
+            ? msg('camera.notFound')
+            : msg('camera.failed', { message: err.message }),
       )
       setStatus('error')
     }

@@ -1,0 +1,313 @@
+{
+  "app": {
+    "name": "Revive",
+    "logo": "R"
+  },
+  "language": {
+    "label": "Language",
+    "en": "EN",
+    "ml": "മലയാളം"
+  },
+  "nav": {
+    "home": "Home",
+    "report": "Report",
+    "exercises": "Exercises",
+    "session": "Live Session",
+    "progress": "Progress",
+    "reminders": "Reminders",
+    "chat": "Chat",
+    "prescription": "Prescription",
+    "caregiver": "Caregiver Dashboard",
+    "login": "Login",
+    "logout": "Logout",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "common": {
+    "comingSoon": "Coming soon.",
+    "pleaseWait": "Please wait…",
+    "saving": "Saving…",
+    "dash": "—"
+  },
+  "errors": {
+    "invalidEmail": "Please enter a valid email address.",
+    "weakPassword": "Password must be at least 6 characters.",
+    "invalidRole": "Please choose Patient or Caregiver.",
+    "emailInUse": "An account with this email already exists. Please log in.",
+    "wrongPassword": "Incorrect email or password.",
+    "notLoggedIn": "You are not logged in.",
+    "unknown": "Something went wrong. Please try again."
+  },
+  "login": {
+    "title": "Welcome to Revive",
+    "subtitle": "Your physiotherapist at home.",
+    "loginTab": "Log in",
+    "signupTab": "Sign up",
+    "iAm": "I am a…",
+    "patient": "Patient",
+    "patientHint": "I do the exercises",
+    "caregiver": "Caregiver",
+    "caregiverHint": "I watch over a family member",
+    "email": "Email",
+    "password": "Password",
+    "passwordHint": "At least 6 characters",
+    "createAccount": "Create account",
+    "submit": "Log in"
+  },
+  "profile": {
+    "setupTitle": "Set up your profile",
+    "title": "Your profile",
+    "setupSubtitle": "Tell us a little about yourself to get started.",
+    "name": "Name",
+    "age": "Age",
+    "gender": "Gender",
+    "female": "Female",
+    "male": "Male",
+    "other": "Other",
+    "language": "Preferred language",
+    "malayalam": "മലയാളം",
+    "malayalamHint": "Malayalam",
+    "english": "English",
+    "englishHint": "English",
+    "nameRequired": "Please enter your name.",
+    "ageInvalid": "Please enter a valid age.",
+    "genderRequired": "Please choose your gender.",
+    "saved": "Profile saved.",
+    "continue": "Continue",
+    "save": "Save changes"
+  },
+  "home": {
+    "hello": "Hello!",
+    "helloName": "Hello, {{name}}!",
+    "subtitle": "What would you like to do today?",
+    "editProfile": "Edit profile",
+    "startTitle": "Start exercising",
+    "startText": "Live session with rep counting and form check",
+    "chooseTitle": "Choose exercises",
+    "chooseText": "Pick a body part and exercise",
+    "reportTitle": "Upload report",
+    "reportText": "Get exercise suggestions from your MRI report",
+    "progressTitle": "My progress",
+    "progressText": "See how you are improving"
+  },
+  "bodyParts": {
+    "shoulder": {
+      "name": "Shoulder",
+      "conditions": "Frozen shoulder, rotator cuff"
+    },
+    "knee": {
+      "name": "Knee",
+      "conditions": "Osteoarthritis, after surgery"
+    },
+    "lower-back": {
+      "name": "Lower back",
+      "conditions": "Low back pain, disc issues"
+    },
+    "neck": {
+      "name": "Neck",
+      "conditions": "Cervical spondylosis"
+    }
+  },
+  "difficulty": {
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard"
+  },
+  "exerciseSelect": {
+    "title": "Choose exercises",
+    "subtitle": "Which part of your body are you working on?",
+    "comingSoon": "Coming soon",
+    "partExercises": "{{part}} exercises",
+    "pickPart": "Pick a body part above to see its exercises.",
+    "repsSets": "<b>{{reps}}</b> reps × <b>{{sets}}</b> sets",
+    "frontView": "Front view",
+    "sideView": "Side view",
+    "start": "Start exercise"
+  },
+  "exercises": {
+    "shoulder-abduction": {
+      "name": "Shoulder abduction",
+      "setup": "Stand facing the camera with your arms by your sides.",
+      "steps": [
+        "Raise your arms out to the sides, up to shoulder height",
+        "Keep your elbows straight and shoulders relaxed",
+        "Lower slowly back down"
+      ],
+      "metricLabel": "Arm height",
+      "cues": {
+        "start": "Raise your arms out to the sides",
+        "up": "Keep going — up to shoulder height",
+        "top": "Good! Now lower slowly",
+        "down": "Lower slowly",
+        "partial": "Raise your arms a little higher"
+      }
+    },
+    "shoulder-flexion": {
+      "name": "Shoulder flexion",
+      "setup": "Stand side-on to the camera with your arms by your sides.",
+      "steps": [
+        "Raise your arm forward and up, thumb pointing up",
+        "Keep your back straight — do not lean back",
+        "Lower slowly back down"
+      ],
+      "metricLabel": "Arm height",
+      "cues": {
+        "start": "Raise your arm forward",
+        "up": "Keep going — reach forward and up",
+        "top": "Good! Now lower slowly",
+        "down": "Lower slowly",
+        "partial": "Raise your arm a little higher"
+      }
+    },
+    "mini-squat": {
+      "name": "Mini squat",
+      "setup": "Stand facing the camera, feet hip-width apart. Hold a chair if needed.",
+      "steps": [
+        "Bend your knees a little, as if starting to sit",
+        "Keep your knees over your toes and chest up",
+        "Stand back up slowly"
+      ],
+      "metricLabel": "Squat depth",
+      "cues": {
+        "start": "Bend your knees slowly",
+        "up": "A little lower",
+        "top": "Good! Now stand up slowly",
+        "down": "Stand up slowly",
+        "partial": "Bend your knees a little more"
+      }
+    },
+    "seated-knee-extension": {
+      "name": "Seated knee extension",
+      "setup": "Sit on a chair side-on to the camera, feet on the floor.",
+      "steps": [
+        "Straighten one knee, lifting your foot forward",
+        "Hold for a moment with your back against the chair",
+        "Lower your foot slowly"
+      ],
+      "metricLabel": "Knee straightness",
+      "cues": {
+        "start": "Straighten your knee",
+        "up": "Keep straightening",
+        "top": "Good! Now lower slowly",
+        "down": "Lower your foot slowly",
+        "partial": "Straighten your knee a little more"
+      }
+    }
+  },
+  "rules": {
+    "leanSideways": "Stand straight — don't lean sideways",
+    "shrug": "Relax your shoulder, don't lift it",
+    "backArch": "Don't arch your back — keep it straight",
+    "kneesIn": "Push your knees outward, over your toes",
+    "leanForward": "Keep your chest up — don't lean forward",
+    "leanBack": "Sit upright — don't lean back"
+  },
+  "parts": {
+    "shoulder": "shoulders",
+    "elbow": "elbows",
+    "hip": "hips",
+    "knee": "knees",
+    "ankle": "feet"
+  },
+  "cues": {
+    "notCounted": "Not counted — {{reason}}",
+    "repFault": "Rep {{n}} — {{reason}}",
+    "repTooFast": "Rep {{n}} — good, now a little slower",
+    "repGreat": "Great rep! That's {{n}}",
+    "repGood": "Good — that's {{n}}",
+    "nextSet": "Set {{set}} — {{cue}}",
+    "ready": "Ready! {{cue}}",
+    "complete": "Exercise complete — well done!",
+    "rest": "Set {{set}} complete! Rest — next set in {{seconds}}s",
+    "stepBack": "Step back — make sure your {{parts}} can be seen",
+    "startPosition": "Get into the start position. {{setup}}",
+    "holdStill": "Hold still…"
+  },
+  "session": {
+    "title": "Live Session",
+    "exercise": "Exercise",
+    "startCamera": "Start camera",
+    "starting": "Starting…",
+    "stopCamera": "Stop camera",
+    "pressStart": "Press \"Start camera\". {{setup}}",
+    "pressStartShort": "Press \"Start camera\" to begin",
+    "loadingModel": "Loading pose model…",
+    "framing": "Step back — full body not visible",
+    "tipSide": "Tip: turn side-on to the camera for best tracking",
+    "tipFront": "Tip: face the camera for best tracking",
+    "fps": "{{fps}} fps",
+    "nextSetNow": "Start next set now",
+    "reps": "Reps",
+    "set": "Set",
+    "lastQuality": "Last rep quality",
+    "setAverage": "Set average {{avg}}",
+    "target": "Target",
+    "targetHint": "Black line = target",
+    "howTo": "How to do it",
+    "avatarSoon": "Avatar demonstration coming soon.",
+    "repsSoFar": "Reps so far",
+    "noReps": "No reps yet.",
+    "goodForm": "Good form",
+    "notCounted": "✕ Not counted — {{reason}}",
+    "jointAngles": "Joint angles",
+    "pickExercise": "Pick an exercise to start.",
+    "repsSetsDifficulty": "{{reps}} reps × {{sets}} sets · {{difficulty}}",
+    "browse": "Browse by body part",
+    "wellDone": "Well done!",
+    "totalReps": "Total reps",
+    "sets": "Sets",
+    "avgQuality": "Avg quality",
+    "notCountedSummary_one": "{{count}} rep was not counted because of a wrong movement.",
+    "notCountedSummary_other": "{{count}} reps were not counted because of a wrong movement.",
+    "workOn": "Things to work on:",
+    "faultCount_one": "{{message}} ({{count}} rep)",
+    "faultCount_other": "{{message}} ({{count}} reps)",
+    "again": "Do it again",
+    "another": "Choose another exercise"
+  },
+  "camera": {
+    "denied": "Camera permission was denied. Please allow camera access and try again.",
+    "notFound": "No camera found on this device.",
+    "failed": "Could not start pose tracking: {{message}}"
+  },
+  "joints": {
+    "leftShoulder": "Left shoulder",
+    "rightShoulder": "Right shoulder",
+    "leftElbow": "Left elbow",
+    "rightElbow": "Right elbow",
+    "leftHip": "Left hip",
+    "rightHip": "Right hip",
+    "leftKnee": "Left knee",
+    "rightKnee": "Right knee"
+  },
+  "pages": {
+    "progress": {
+      "title": "Progress",
+      "subtitle": "Your quality trend, reps per day, pain trend and streak."
+    },
+    "caregiver": {
+      "title": "Caregiver Dashboard",
+      "subtitle": "See your family member's progress and download the report."
+    },
+    "chat": {
+      "title": "Chat with Revive",
+      "subtitle": "Ask questions in Malayalam or English. Say \"Hey Revive\"."
+    },
+    "prescription": {
+      "title": "Prescription Assistant",
+      "subtitle": "Upload a prescription to get a Malayalam medicine guide."
+    },
+    "reminders": {
+      "title": "Reminders",
+      "subtitle": "Exercise and checkup reminders."
+    },
+    "report": {
+      "title": "Medical Report",
+      "subtitle": "Upload your MRI report for AI-suggested exercises, or skip."
+    },
+    "summary": {
+      "title": "Session Summary",
+      "subtitle": "Reps, quality and pain level for this session."
+    }
+  }
+}

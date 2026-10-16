@@ -1,21 +1,23 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Navigate, useNavigate } from 'react-router-dom'
 import useAuth from '../auth/useAuth.js'
 import { homePathFor, logIn, ROLES, signUp } from '../services/authService.js'
 
 const ROLE_OPTIONS = [
-  { value: ROLES.PATIENT, label: 'Patient', hint: 'I do the exercises' },
-  { value: ROLES.CAREGIVER, label: 'Caregiver', hint: 'I watch over a family member' },
+  { value: ROLES.PATIENT, label: 'login.patient', hint: 'login.patientHint' },
+  { value: ROLES.CAREGIVER, label: 'login.caregiver', hint: 'login.caregiverHint' },
 ]
 
 export default function Login() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [mode, setMode] = useState('login') // login | signup
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState(ROLES.PATIENT)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState(null) // error code → errors.<code>
   const [busy, setBusy] = useState(false)
 
   if (user && !busy) return <Navigate to={homePathFor(user)} replace />
@@ -30,7 +32,7 @@ export default function Login() {
       const u = isSignup ? await signUp({ email, password, role }) : await logIn({ email, password })
       navigate(homePathFor(u), { replace: true })
     } catch (err) {
-      setError(err.message)
+      setError(err.code ?? 'unknown')
     } finally {
       setBusy(false)
     }
@@ -44,15 +46,15 @@ export default function Login() {
   return (
     <section className="mx-auto max-w-lg space-y-6">
       <div className="text-center">
-        <h1 className="text-3xl font-bold sm:text-4xl">Welcome to Revive</h1>
-        <p className="mt-2 text-xl text-slate-600">Your physiotherapist at home.</p>
+        <h1 className="text-3xl font-bold sm:text-4xl">{t('login.title')}</h1>
+        <p className="mt-2 text-xl text-slate-600">{t('login.subtitle')}</p>
       </div>
 
       <div className="card space-y-6">
         <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1" role="tablist">
           {[
-            ['login', 'Log in'],
-            ['signup', 'Sign up'],
+            ['login', t('login.loginTab')],
+            ['signup', t('login.signupTab')],
           ].map(([value, label]) => (
             <button
               key={value}
@@ -72,7 +74,7 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {isSignup && (
             <fieldset>
-              <legend className="mb-2 text-lg font-semibold">I am a…</legend>
+              <legend className="mb-2 text-lg font-semibold">{t('login.iAm')}</legend>
               <div className="grid grid-cols-2 gap-3">
                 {ROLE_OPTIONS.map((r) => (
                   <label
@@ -89,8 +91,8 @@ export default function Login() {
                       onChange={() => setRole(r.value)}
                       className="sr-only"
                     />
-                    <span className="block text-xl font-bold">{r.label}</span>
-                    <span className="block text-base text-slate-600">{r.hint}</span>
+                    <span className="block text-xl font-bold">{t(r.label)}</span>
+                    <span className="block text-base text-slate-600">{t(r.hint)}</span>
                   </label>
                 ))}
               </div>
@@ -98,7 +100,7 @@ export default function Login() {
           )}
 
           <label className="block">
-            <span className="mb-1 block text-lg font-semibold">Email</span>
+            <span className="mb-1 block text-lg font-semibold">{t('login.email')}</span>
             <input
               type="email"
               className="input"
@@ -110,7 +112,7 @@ export default function Login() {
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-lg font-semibold">Password</span>
+            <span className="mb-1 block text-lg font-semibold">{t('login.password')}</span>
             <input
               type="password"
               className="input"
@@ -120,17 +122,17 @@ export default function Login() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            {isSignup && <span className="mt-1 block text-base text-slate-500">At least 6 characters</span>}
+            {isSignup && <span className="mt-1 block text-base text-slate-500">{t('login.passwordHint')}</span>}
           </label>
 
           {error && (
             <div role="alert" className="rounded-2xl bg-red-50 p-4 text-lg font-semibold text-red-800 ring-1 ring-red-200">
-              {error}
+              {t(`errors.${error}`, { defaultValue: t('errors.unknown') })}
             </div>
           )}
 
           <button type="submit" className="btn-primary w-full" disabled={busy}>
-            {busy ? 'Please wait…' : isSignup ? 'Create account' : 'Log in'}
+            {busy ? t('common.pleaseWait') : isSignup ? t('login.createAccount') : t('login.submit')}
           </button>
         </form>
       </div>

@@ -1,5 +1,7 @@
+import { useTranslation } from 'react-i18next'
 import Placeholder from '../components/Placeholder.jsx'
 
 export default function ReportUpload() {
-  return <Placeholder title="Medical Report" subtitle="Upload your MRI report for AI-suggested exercises, or skip." />
+  const { t } = useTranslation()
+  return <Placeholder title={t('pages.report.title')} subtitle={t('pages.report.subtitle')} />
 }

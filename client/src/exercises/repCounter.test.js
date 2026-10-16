@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest'
+import i18n from '../i18n/index.js'
+import { translateMessage } from '../i18n/message.js'
 import { LM } from '../pose/angles.js'
 import { getExercise } from './library.js'
 import { CALIBRATION_MS, createRepCounter } from './repCounter.js'
 
 const FRAME_MS = 33
+const en = i18n.getFixedT('en')
+const text = (m) => translateMessage(en, m, 'en')
 const rad = (d) => (d * Math.PI) / 180
 
 /**
@@ -84,7 +88,7 @@ describe('shoulder abduction', () => {
     h.move((a) => arm(a), 10, 55, 1000)
     h.move((a) => arm(a), 55, 10, 1000)
     expect(h.snap.reps).toBe(0)
-    expect(h.snap.correction.text).toMatch(/higher/i)
+    expect(text(h.snap.correction)).toMatch(/higher/i)
   })
 
   it('flags shoulder shrug and lowers the quality score', () => {
@@ -125,7 +129,7 @@ describe('shoulder abduction', () => {
     h.calibrate(arm(10))
     const s = h.feed(null)
     expect(s.missing.length).toBeGreaterThan(0)
-    expect(s.correction.text).toMatch(/step back/i)
+    expect(text(s.correction)).toMatch(/step back — make sure your shoulders, elbows, and hips can be seen/i)
   })
 
   it('moves to rest after a set and finishes after the last set', () => {
@@ -138,7 +142,7 @@ describe('shoulder abduction', () => {
     }
     for (let i = 0; i < 10; i++) doRep()
     expect(h.snap.status).toBe('rest')
-    expect(h.snap.correction.text).toMatch(/set 1 complete/i)
+    expect(text(h.snap.correction)).toMatch(/set 1 complete/i)
 
     h.counter.skipRest()
     expect(h.counter.snapshot().set).toBe(2)
@@ -167,7 +171,7 @@ describe('shoulder abduction — shrug compensation', () => {
     h.feed(pose(70, SHRUG), 600)
     expect(h.snap.value).toBeLessThan(85)
     expect(h.snap.phase).toBe('UP')
-    expect(h.snap.correction.text).toBe(SHRUG_MSG)
+    expect(text(h.snap.correction)).toBe(SHRUG_MSG)
     lowerAndFinish(h, 70)
     expect(h.snap.reps).toBe(0)
   })
@@ -179,14 +183,14 @@ describe('shoulder abduction — shrug compensation', () => {
     h.feed(pose(60, SHRUG), 400) // confirmed shrug before reaching the target
     h.move((a) => pose(a, SHRUG), 60, 95, 600)
     expect(h.snap.phase).toBe('TOP')
-    expect(h.snap.correction).toEqual({ text: SHRUG_MSG, kind: 'error' })
+    expect(h.snap.correction).toMatchObject({ key: 'rules.shrug', kind: 'error' })
     const s = lowerAndFinish(h)
 
     expect(s.reps).toBe(0)
     expect(s.totalReps).toBe(0)
     expect(s.attempts).toBe(1)
-    expect(s.lastAttempt).toMatchObject({ counted: false, reason: SHRUG_MSG, quality: null })
-    expect(s.correction.text).toBe(`Not counted — ${SHRUG_MSG}`)
+    expect(s.lastAttempt).toMatchObject({ counted: false, reason: 'shrug', quality: null })
+    expect(text(s.correction)).toBe(`Not counted — ${SHRUG_MSG}`)
   })
 
   it('does not count a rep when a shrug starts right as the arm crosses the target', () => {
@@ -199,7 +203,7 @@ describe('shoulder abduction — shrug compensation', () => {
     h.feed(pose(95, SHRUG), 400) // the same shrug streak is then confirmed
     const s = lowerAndFinish(h)
     expect(s.reps).toBe(0)
-    expect(s.lastAttempt).toMatchObject({ counted: false, reason: SHRUG_MSG })
+    expect(s.lastAttempt).toMatchObject({ counted: false, reason: 'shrug' })
   })
 
   it('still counts the rep (with a lower score) when a short shrug happens only after the target', () => {
@@ -224,7 +228,7 @@ describe('shoulder abduction — shrug compensation', () => {
     h.move((a) => pose(a, SHRUG), 95, 10, 1200)
     h.feed(pose(10), 200)
     expect(h.snap.reps).toBe(0)
-    expect(h.snap.lastAttempt).toMatchObject({ counted: false, reason: SHRUG_MSG })
+    expect(h.snap.lastAttempt).toMatchObject({ counted: false, reason: 'shrug' })
   })
 })
 
@@ -260,6 +264,6 @@ describe('mini squat (front view)', () => {
     h.feed(squat(0.03, 0.03), 400)
     h.move((d) => squat(d, d), 0.03, 0, 1000)
     expect(h.snap.reps).toBe(0)
-    expect(h.snap.lastAttempt).toMatchObject({ counted: false, reason: 'Push your knees outward, over your toes' })
+    expect(h.snap.lastAttempt).toMatchObject({ counted: false, reason: 'kneesIn' })
   })
 })
