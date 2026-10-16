@@ -4,12 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "postinstall": "node scripts/copy-mediapipe-wasm.js",
+    "predev": "node scripts/copy-mediapipe-wasm.js",
     "dev": "vite",
     "build": "vite build",
+    "prebuild": "node scripts/copy-mediapipe-wasm.js",
     "lint": "oxlint",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "^1.1.1",
     "firebase": "^13.0.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
