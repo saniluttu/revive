@@ -99,6 +99,8 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
       crossStreaks: {}, // blockAtTarget faults already starting when the target was crossed
       voidReason: null,
       lastRestT, // the up phase is timed from here
+      holdMs: 0, // time at or above the target
+      lastTopT: null, // the down phase is timed from here
     }
     if (strict && !armed) voidRep('slowDown', t)
   }
@@ -124,6 +126,10 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
     const dt = t - rep.lastT
     rep.lastT = t
     rep.peak = Math.max(rep.peak, value)
+    if (value >= target) {
+      if (rep.lastTopT != null) rep.holdMs += dt
+      rep.lastTopT = t
+    }
     if (Math.abs(value - rep.lastSample) >= deadband) {
       rep.path += Math.abs(value - rep.lastSample)
       rep.lastSample = value
@@ -245,6 +251,7 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
       case 'UP':
         if (value >= target) {
           phase = 'TOP'
+          if (strict && t - rep.lastRestT < strict.minUpMs) voidRep('slowDown', t)
           checkBlockAtTarget(t)
         } else if (value <= rest) {
           // Came back down without reaching the target: no rep
@@ -255,7 +262,10 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
         }
         break
       case 'TOP':
-        if (value < target - hyst) phase = 'DOWN'
+        if (value < target - hyst) {
+          phase = 'DOWN'
+          if (strict && rep.holdMs < strict.minHoldMs) voidRep('slowDown', t)
+        }
         break
       case 'DOWN':
         if (value >= target) {
@@ -263,6 +273,7 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
           checkBlockAtTarget(t)
         } else if (value <= rest) {
           phase = 'START'
+          if (strict && t - rep.lastTopT < strict.minDownMs) voidRep('slowDown', t)
           completeRep(t)
         }
         break
