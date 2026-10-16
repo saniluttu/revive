@@ -10,6 +10,8 @@
 // mainFault     – the exercise's main compensation; a rep where it is held for
 //                 most of the rep is not counted
 // blockAtTarget – faults that void the rep if active as the target is crossed
+// voidOn        – faults that void the rep whenever they are confirmed during it
+// strict        – extra rest / tempo / peak checks (see ABDUCTION)
 
 // Names, conditions, setup, steps, metric labels and cues are in i18n
 // (`bodyParts.<id>`, `exercises.<id>`); difficulty is a key into `difficulty.*`.
@@ -97,9 +99,10 @@ export const EXERCISES = [
     target: ABDUCTION.topMin,
     ideal: 90,
     meter: [0, 130],
-    rules: ['leanSideways', 'shrug'],
+    rules: ['leanSideways', 'shrug', 'straightArm'],
     mainFault: 'shrug',
     blockAtTarget: ['shrug'],
+    voidOn: ['straightArm'],
     strict: ABDUCTION,
   },
   {

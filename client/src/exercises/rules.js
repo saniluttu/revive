@@ -2,10 +2,22 @@
 // Messages are in i18n `rules.<id>`.
 // check(features, baseline) → true (wrong movement), false (ok) or null (can't tell from this view).
 
+import { ABDUCTION } from './library.js'
+
+const workingSide = (f) => (f.working ? f.sides[f.working] : null)
+
 export const RULES = {
   // Shoulder abduction: shoulder-hip line tilt > 10°
   leanSideways: {
     check: (f) => (f.view === 'front' && f.trunk ? f.trunk.tilt > 10 : null),
+  },
+
+  // Shoulder abduction: the working arm's elbow must stay straight (> 150°)
+  straightArm: {
+    check: (f) => {
+      const elbow = workingSide(f)?.elbowAngle
+      return elbow == null ? null : elbow < ABDUCTION.minElbowAngle
+    },
   },
 
   // Shoulder abduction/flexion: shoulder-to-ear distance drops > 20% from baseline

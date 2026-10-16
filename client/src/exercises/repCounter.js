@@ -143,7 +143,7 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
         if (t - faultSince[id] >= FAULT_HOLD_MS) {
           activeFaults.push(id)
           rep.faults.add(id)
-          if (rep.crossStreaks[id] === faultSince[id]) voidRep(id, t)
+          if (rep.crossStreaks[id] === faultSince[id] || exercise.voidOn?.includes(id)) voidRep(id, t)
         }
       } else {
         delete faultSince[id]
