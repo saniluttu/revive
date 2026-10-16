@@ -5,6 +5,9 @@
 // A rep that reached the target is still "not counted" when:
 //   - a `blockAtTarget` fault (e.g. shrug) was active as the target was crossed, or
 //   - the exercise's `mainFault` was held for most of the rep
+// Exercises with a `strict` config (shoulder abduction, see ABDUCTION in library.js)
+// are also checked for: starting from a still rest, tempo, a hold at the top, an
+// upper limit and a single smooth peak; form rules listed in `voidOn` void the rep.
 //
 // Pure JS (no React) so it can be unit-tested with synthetic poses. On-screen
 // text is returned as translatable messages ({ key, values }, see i18n/message.js);
@@ -70,6 +73,11 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
   let rep = null // rep in progress
   let restUntil = 0
   let message = null // { message, kind, until }
+  // strict mode: the arm must rest still before a rep can start
+  const strict = exercise.strict ?? null
+  let restAnchor = null // { t, lo, hi } while the arm is down and the angle stays within restStillDeg
+  let armed = false // rested long enough for the next rep
+  let lastRestT = 0 // last frame with the arm down
   const history = []
   const faultSince = {}
   let activeFaults = []
@@ -90,7 +98,9 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
       faultMs: {}, // how long each wrong movement was detected during this rep
       crossStreaks: {}, // blockAtTarget faults already starting when the target was crossed
       voidReason: null,
+      lastRestT, // the up phase is timed from here
     }
+    if (strict && !armed) voidRep('slowDown', t)
   }
 
   function voidRep(reason, t) {
@@ -138,8 +148,25 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
 
   function endRep() {
     rep = null
+    armed = false
+    restAnchor = null
     activeFaults = []
     for (const id of Object.keys(faultSince)) delete faultSince[id]
+  }
+
+  function rejectRep(t) {
+    history.push({
+      set,
+      rep: null,
+      counted: false,
+      reason: rep.voidReason,
+      quality: null,
+      faults: [...rep.faults],
+      peak: Math.round(rep.peak * 10) / 10,
+      durationMs: Math.round(t - rep.start),
+    })
+    say(msg('cues.notCounted', { reason: ruleMsg(rep.voidReason) }), 'error', t, 2500)
+    endRep()
   }
 
   function completeRep(t) {
@@ -148,20 +175,7 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
 
     const main = exercise.mainFault
     if (main && (rep.faultMs[main] ?? 0) > durationMs * MAIN_FAULT_SHARE) voidRep(main, t)
-    if (rep.voidReason) {
-      history.push({
-        set,
-        rep: null,
-        counted: false,
-        reason: rep.voidReason,
-        quality: null,
-        faults: [...rep.faults],
-        peak: Math.round(rep.peak * 10) / 10,
-        durationMs: Math.round(durationMs),
-      })
-      say(msg('cues.notCounted', { reason: ruleMsg(rep.voidReason) }), 'error', t, 2500)
-      return endRep()
-    }
+    if (rep.voidReason) return rejectRep(t)
 
     // Range of motion: reaching `target` counts, reaching `ideal` scores full marks
     const rom = clamp01((rep.peak - rest) / (ideal - rest))
@@ -203,7 +217,22 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
     else say(msg(quality >= 80 ? 'cues.repGreat' : 'cues.repGood', { n: reps }), 'good', t)
   }
 
+  function trackRest(t) {
+    if (value > strict.restMax) {
+      restAnchor = null
+      return
+    }
+    lastRestT = t
+    if (restAnchor) {
+      restAnchor.lo = Math.min(restAnchor.lo, value)
+      restAnchor.hi = Math.max(restAnchor.hi, value)
+    }
+    if (!restAnchor || restAnchor.hi - restAnchor.lo > strict.restStillDeg) restAnchor = { t, lo: value, hi: value }
+    if (!rep && t - restAnchor.t >= strict.restHoldMs) armed = true
+  }
+
   function stepPhase(f, t) {
+    if (strict) trackRest(t)
     if (rep) trackRep(f, t)
 
     switch (phase) {
@@ -219,8 +248,9 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
           checkBlockAtTarget(t)
         } else if (value <= rest) {
           // Came back down without reaching the target: no rep
-          if (rep.peak > rest + 2 * hyst) say(cue('partial'), 'warn', t, 2500)
           phase = 'START'
+          if (rep.voidReason && rep.peak > rest + 2 * hyst) return rejectRep(t)
+          if (rep.peak > rest + 2 * hyst) say(cue('partial'), 'warn', t, 2500)
           endRep()
         }
         break
@@ -245,6 +275,7 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
     phase = 'START'
     status = 'active'
     endRep()
+    armed = true // the rest between sets
     say(msg('cues.nextSet', { set, cue: cue('start') }), 'info', t, 2500)
   }
 
@@ -334,6 +365,7 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
           calibration = null
           status = 'active'
           phase = 'START'
+          armed = true // calibration was a rest held long enough
           say(msg('cues.ready', { cue: cue('start') }), 'good', t, 2500)
         }
       }
