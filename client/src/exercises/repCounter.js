@@ -2,6 +2,9 @@
 //
 // Session status:  framing → calibrating → active ⇄ rest → done
 // Rep phases:      START → UP → TOP → DOWN → START  = 1 rep, only if TOP (target ROM) was reached
+// A rep that reached the target is still "not counted" when:
+//   - a `blockAtTarget` fault (e.g. shrug) was active as the target was crossed, or
+//   - the exercise's `mainFault` was held for most of the rep
 //
 // Pure JS (no React) so it can be unit-tested with synthetic poses.
 
@@ -17,6 +20,7 @@ const DEFAULT_REST_MS = 30_000
 const SMOOTHING = 0.5 // exponential moving average weight for the metric
 const HYSTERESIS = 0.15 // fraction of (target − rest) used as a dead band between phases
 const PATH_DEADBAND = 0.03 // fraction of (target − rest); smaller wiggles don't count as jerkiness
+const MAIN_FAULT_SHARE = 0.5 // main compensation held longer than this share of the rep → not counted
 
 const clamp01 = (x) => Math.min(1, Math.max(0, x))
 
@@ -74,10 +78,40 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
   }
 
   function startRep(t) {
-    rep = { start: t, startValue: value, peak: value, path: 0, lastSample: value, faults: new Set() }
+    rep = {
+      start: t,
+      lastT: t,
+      startValue: value,
+      peak: value,
+      path: 0,
+      lastSample: value,
+      faults: new Set(),
+      faultMs: {}, // how long each wrong movement was detected during this rep
+      crossStreaks: {}, // blockAtTarget faults already starting when the target was crossed
+      voidReason: null,
+    }
+  }
+
+  function voidRep(reason, t) {
+    if (rep.voidReason) return
+    rep.voidReason = reason
+    say(`Not counted — ${reason}`, 'error', t, 2500)
+  }
+
+  // Called on each crossing of the target. A blocking fault that is already
+  // confirmed voids the rep now; one that has only just started voids it if
+  // that same streak lasts long enough to be confirmed (see trackRep).
+  function checkBlockAtTarget(t) {
+    for (const id of exercise.blockAtTarget ?? []) {
+      if (faultSince[id] == null) continue
+      if (t - faultSince[id] >= FAULT_HOLD_MS) voidRep(RULES[id].message, t)
+      else rep.crossStreaks[id] = faultSince[id]
+    }
   }
 
   function trackRep(f, t) {
+    const dt = t - rep.lastT
+    rep.lastT = t
     rep.peak = Math.max(rep.peak, value)
     if (Math.abs(value - rep.lastSample) >= deadband) {
       rep.path += Math.abs(value - rep.lastSample)
@@ -88,12 +122,15 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
     for (const id of exercise.rules) {
       if (RULES[id].check(f, baseline) === true) {
         faultSince[id] ??= t
+        rep.faultMs[id] = (rep.faultMs[id] ?? 0) + dt
         if (t - faultSince[id] >= FAULT_HOLD_MS) {
           activeFaults.push(id)
           rep.faults.add(id)
+          if (rep.crossStreaks[id] === faultSince[id]) voidRep(RULES[id].message, t)
         }
       } else {
         delete faultSince[id]
+        delete rep.crossStreaks[id]
       }
     }
   }
@@ -107,6 +144,23 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
   function completeRep(t) {
     const durationMs = t - rep.start
     if (durationMs < MIN_REP_MS) return endRep()
+
+    const main = exercise.mainFault
+    if (main && (rep.faultMs[main] ?? 0) > durationMs * MAIN_FAULT_SHARE) voidRep(RULES[main].message, t)
+    if (rep.voidReason) {
+      history.push({
+        set,
+        rep: null,
+        counted: false,
+        reason: rep.voidReason,
+        quality: null,
+        faults: [...rep.faults],
+        peak: Math.round(rep.peak * 10) / 10,
+        durationMs: Math.round(durationMs),
+      })
+      say(`Not counted — ${rep.voidReason}`, 'error', t, 2500)
+      return endRep()
+    }
 
     // Range of motion: reaching `target` counts, reaching `ideal` scores full marks
     const rom = clamp01((rep.peak - rest) / (ideal - rest))
@@ -123,6 +177,8 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
     history.push({
       set,
       rep: reps,
+      counted: true,
+      reason: null,
       quality,
       rom: Math.round(rom * 100),
       smoothness: Math.round(smoothness * 100),
@@ -157,8 +213,10 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
         }
         break
       case 'UP':
-        if (value >= target) phase = 'TOP'
-        else if (value <= rest) {
+        if (value >= target) {
+          phase = 'TOP'
+          checkBlockAtTarget(t)
+        } else if (value <= rest) {
           // Came back down without reaching the target: no rep
           if (rep.peak > rest + 2 * hyst) say(exercise.cues.partial, 'warn', t, 2500)
           phase = 'START'
@@ -169,8 +227,10 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
         if (value < target - hyst) phase = 'DOWN'
         break
       case 'DOWN':
-        if (value >= target) phase = 'TOP'
-        else if (value <= rest) {
+        if (value >= target) {
+          phase = 'TOP'
+          checkBlockAtTarget(t)
+        } else if (value <= rest) {
           phase = 'START'
           completeRep(t)
         }
@@ -207,7 +267,8 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
   }
 
   function snapshot(t = now()) {
-    const done = history.filter((r) => r.set === set)
+    const counted = history.filter((r) => r.counted)
+    const done = counted.filter((r) => r.set === set)
     return {
       status,
       phase,
@@ -215,7 +276,8 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
       sets: exercise.sets,
       reps,
       targetReps: exercise.reps,
-      totalReps: history.length,
+      totalReps: counted.length,
+      attempts: history.length, // counted + not counted
       value: value == null ? null : Math.round(value * 10) / 10,
       view,
       viewMismatch: view != null && view !== exercise.view,
@@ -224,7 +286,8 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
       calibrationProgress:
         status === 'calibrating' && calibration ? clamp01((t - calibration.start) / CALIBRATION_MS) : 0,
       restRemainingMs: status === 'rest' ? Math.max(0, restUntil - t) : 0,
-      lastRep: history.at(-1) ?? null,
+      lastRep: counted.at(-1) ?? null, // last counted rep
+      lastAttempt: history.at(-1) ?? null,
       setAverage: done.length ? Math.round(done.reduce((s, r) => s + r.quality, 0) / done.length) : null,
       history: history.slice(),
       correction: correction(t),

@@ -75,7 +75,9 @@ function ExercisePicker() {
 }
 
 function SessionDone({ snap, onRestart }) {
-  const avg = Math.round(snap.history.reduce((s, r) => s + r.quality, 0) / (snap.history.length || 1))
+  const counted = snap.history.filter((r) => r.counted)
+  const notCounted = snap.history.length - counted.length
+  const avg = Math.round(counted.reduce((s, r) => s + r.quality, 0) / (counted.length || 1))
   const faultCounts = {}
   for (const r of snap.history) for (const f of r.faults) faultCounts[f] = (faultCounts[f] ?? 0) + 1
   return (
@@ -88,6 +90,11 @@ function SessionDone({ snap, onRestart }) {
           {avg}
         </StatTile>
       </div>
+      {notCounted > 0 && (
+        <p className="text-lg font-semibold text-red-700">
+          {notCounted} {notCounted === 1 ? 'rep was' : 'reps were'} not counted because of a wrong movement.
+        </p>
+      )}
       {Object.keys(faultCounts).length > 0 && (
         <div className="text-lg">
           <div className="font-semibold">Things to work on:</div>
@@ -117,7 +124,7 @@ export default function LiveSession() {
   const exercise = getExercise(params.get('exercise'))
 
   const counterRef = useRef(null)
-  const lastUiRef = useRef({ time: 0, totalReps: 0, status: null })
+  const lastUiRef = useRef({ time: 0, attempts: 0, status: null })
   const [snap, setSnap] = useState(null)
 
   const resetCounter = useCallback(() => {
@@ -131,11 +138,11 @@ export default function LiveSession() {
     const counter = counterRef.current
     if (!counter) return
     const next = counter.update(landmarks, width, height)
-    // Rep counted or status change → update immediately; otherwise throttle
+    // Rep finished (counted or not) or status change → update immediately; otherwise throttle
     const now = performance.now()
     const last = lastUiRef.current
-    if (next.totalReps !== last.totalReps || next.status !== last.status || now - last.time >= UI_INTERVAL_MS) {
-      lastUiRef.current = { time: now, totalReps: next.totalReps, status: next.status }
+    if (next.attempts !== last.attempts || next.status !== last.status || now - last.time >= UI_INTERVAL_MS) {
+      lastUiRef.current = { time: now, attempts: next.attempts, status: next.status }
       setSnap(next)
     }
   }, [])
@@ -282,16 +289,22 @@ export default function LiveSession() {
             <h2 className="mb-3 text-2xl font-bold">Reps so far</h2>
             {snap?.history.length ? (
               <div className="flex flex-wrap gap-2">
-                {snap.history.map((r) => (
-                  <span
-                    key={`${r.set}-${r.rep}`}
-                    title={r.faults.map((f) => RULES[f].message).join(', ') || 'Good form'}
-                    className={`rounded-xl px-3 py-2 text-lg font-bold ring-1 ring-slate-200 ${qualityColor(r.quality)}`}
-                  >
-                    {r.set}.{r.rep}: {r.quality}
-                    {r.faults.length > 0 && ' ⚠'}
-                  </span>
-                ))}
+                {snap.history.map((r, i) =>
+                  r.counted ? (
+                    <span
+                      key={i}
+                      title={r.faults.map((f) => RULES[f].message).join(', ') || 'Good form'}
+                      className={`rounded-xl px-3 py-2 text-lg font-bold ring-1 ring-slate-200 ${qualityColor(r.quality)}`}
+                    >
+                      {r.set}.{r.rep}: {r.quality}
+                      {r.faults.length > 0 && ' ⚠'}
+                    </span>
+                  ) : (
+                    <span key={i} className="rounded-xl bg-red-50 px-3 py-2 text-lg font-semibold text-red-800 ring-1 ring-red-200">
+                      ✕ Not counted — {r.reason}
+                    </span>
+                  ),
+                )}
               </div>
             ) : (
               <p className="text-lg text-slate-500">No reps yet.</p>

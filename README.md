@@ -71,7 +71,9 @@ The app runs without them; Firebase features are disabled until they're set.
   range-of-motion number per exercise (`library.js`) and runs
   `START → UP → TOP → DOWN → START`; a rep counts only if the target was reached.
   Form rules from REQUIREMENTS.md F6 live in `rules.js`. Each rep gets a 0–100 score:
-  40 range of motion + 30 smoothness + 30 form. Run the tests with `cd client && npm test`.
+  40 range of motion + 30 smoothness + 30 form.
+  A rep is shown as *not counted* if the exercise's main compensation (e.g. shoulder
+  shrug) is active as the target is crossed (abduction) or held for most of the rep. Run the tests with `cd client && npm test`.
 - **LLM router:** `server/src/llm/llmRouter.js` tries Gemini, Groq and OpenRouter in order
   for each task. A key that hits a 429, timeout or 5xx cools down for 60 s and the router
   moves to the next one. If every provider fails, it returns a cached response.

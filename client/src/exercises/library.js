@@ -6,6 +6,10 @@
 //   target – must reach this for the rep to count
 //   ideal  – full range-of-motion score
 //   meter  – [min, max] for the on-screen range bar
+//
+// mainFault     – the exercise's main compensation; a rep where it is held for
+//                 most of the rep is not counted
+// blockAtTarget – faults that void the rep if active as the target is crossed
 
 export const BODY_PARTS = [
   { id: 'shoulder', name: 'Shoulder', conditions: 'Frozen shoulder, rotator cuff', available: true },
@@ -53,14 +57,20 @@ export const EXERCISES = [
       'Lower slowly back down',
     ],
     required: ['shoulder', 'elbow', 'hip'],
+    // Hip–shoulder–elbow angle of the moving (higher) arm. The vertex is the live
+    // shoulder: when a shrug lifts the shoulder and arm together the angle stays
+    // the same, whereas a fixed calibrated vertex would read the lifted elbow as
+    // extra abduction.
     metric: (f) => maxOf(f.sides.left.shoulderAngle, f.sides.right.shoulderAngle),
     metricLabel: 'Arm height',
     unit: '°',
     rest: 30,
-    target: 75,
+    target: 85,
     ideal: 90,
     meter: [0, 120],
     rules: ['leanSideways', 'shrug'],
+    mainFault: 'shrug',
+    blockAtTarget: ['shrug'],
     cues: {
       start: 'Raise your arms out to the sides',
       up: 'Keep going — up to shoulder height',
@@ -84,6 +94,10 @@ export const EXERCISES = [
       'Lower slowly back down',
     ],
     required: ['shoulder', 'elbow', 'hip'],
+    // Hip–shoulder–elbow angle of the moving (higher) arm. The vertex is the live
+    // shoulder: when a shrug lifts the shoulder and arm together the angle stays
+    // the same, whereas a fixed calibrated vertex would read the lifted elbow as
+    // extra abduction.
     metric: (f) => maxOf(f.sides.left.shoulderAngle, f.sides.right.shoulderAngle),
     metricLabel: 'Arm height',
     unit: '°',
@@ -92,6 +106,7 @@ export const EXERCISES = [
     ideal: 110,
     meter: [0, 150],
     rules: ['shrug', 'backArch'],
+    mainFault: 'backArch',
     cues: {
       start: 'Raise your arm forward',
       up: 'Keep going — reach forward and up',
@@ -123,6 +138,7 @@ export const EXERCISES = [
     ideal: 9,
     meter: [0, 12],
     rules: ['kneesIn', 'leanForward'],
+    mainFault: 'kneesIn',
     cues: {
       start: 'Bend your knees slowly',
       up: 'A little lower',
@@ -154,6 +170,7 @@ export const EXERCISES = [
     ideal: 165,
     meter: [80, 180],
     rules: ['leanBack'],
+    mainFault: 'leanBack',
     cues: {
       start: 'Straighten your knee',
       up: 'Keep straightening',

@@ -10,7 +10,7 @@ export const RULES = {
 
   // Shoulder abduction/flexion: shoulder-to-ear distance drops > 20% from baseline
   shrug: {
-    message: "Relax your shoulders — don't shrug",
+    message: "Relax your shoulder, don't lift it",
     check: (f, base) => {
       let seen = false
       for (const side of ['left', 'right']) {

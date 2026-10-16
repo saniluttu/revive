@@ -148,23 +148,118 @@ describe('shoulder abduction', () => {
   })
 })
 
-describe('mini squat (front view)', () => {
-  it('counts a squat from hip drop and flags knees caving in', () => {
-    const h = harness('mini-squat')
-    h.calibrate(frontPose())
-    expect(h.snap.status).toBe('active')
+describe('shoulder abduction — shrug compensation', () => {
+  const pose = (arm, shrug = 0) => frontPose({ arm, shrug })
+  const SHRUG = 0.04 // shoulders (and arms) lift 0.04 → ear gap 0.1 → 0.06, a 40% drop
+  const SHRUG_MSG = "Relax your shoulder, don't lift it"
 
-    // 0.4 leg height → 0.03 drop = 7.5%
-    h.move((d) => frontPose({ drop: d }), 0, 0.03, 1000)
+  function lowerAndFinish(h, from = 95) {
+    h.move((a) => pose(a), from, 10, 1200)
+    h.feed(pose(10), 200)
+    return h.snap
+  }
+
+  it('a partial raise with a shrug is not inflated into a full rep', () => {
+    const h = harness('shoulder-abduction')
+    h.calibrate(pose(10))
+    h.move((a) => pose(a), 10, 70, 1000)
+    h.move((s) => pose(70, s), 0, SHRUG, 300)
+    h.feed(pose(70, SHRUG), 600)
+    expect(h.snap.value).toBeLessThan(85)
+    expect(h.snap.phase).toBe('UP')
+    expect(h.snap.correction.text).toBe(SHRUG_MSG)
+    lowerAndFinish(h, 70)
+    expect(h.snap.reps).toBe(0)
+  })
+
+  it('does not count a rep when a shrug is already active as the arm crosses the target', () => {
+    const h = harness('shoulder-abduction')
+    h.calibrate(pose(10))
+    h.move((a) => pose(a), 10, 60, 800)
+    h.feed(pose(60, SHRUG), 400) // confirmed shrug before reaching the target
+    h.move((a) => pose(a, SHRUG), 60, 95, 600)
     expect(h.snap.phase).toBe('TOP')
-    h.move((d) => frontPose({ drop: d }), 0.03, 0, 1000)
+    expect(h.snap.correction).toEqual({ text: SHRUG_MSG, kind: 'error' })
+    const s = lowerAndFinish(h)
+
+    expect(s.reps).toBe(0)
+    expect(s.totalReps).toBe(0)
+    expect(s.attempts).toBe(1)
+    expect(s.lastAttempt).toMatchObject({ counted: false, reason: SHRUG_MSG, quality: null })
+    expect(s.correction.text).toBe(`Not counted — ${SHRUG_MSG}`)
+  })
+
+  it('does not count a rep when a shrug starts right as the arm crosses the target', () => {
+    const h = harness('shoulder-abduction')
+    h.calibrate(pose(10))
+    h.move((a) => pose(a), 10, 80, 1000)
+    expect(h.snap.phase).toBe('UP')
+    h.feed(pose(95, SHRUG)) // crosses the target on the same frame the shrug begins
+    expect(h.snap.phase).toBe('TOP')
+    h.feed(pose(95, SHRUG), 400) // the same shrug streak is then confirmed
+    const s = lowerAndFinish(h)
+    expect(s.reps).toBe(0)
+    expect(s.lastAttempt).toMatchObject({ counted: false, reason: SHRUG_MSG })
+  })
+
+  it('still counts the rep (with a lower score) when a short shrug happens only after the target', () => {
+    const h = harness('shoulder-abduction')
+    h.calibrate(pose(10))
+    h.move((a) => pose(a), 10, 95, 1000)
+    h.feed(pose(95), 300)
+    h.feed(pose(95, SHRUG), 400)
+    h.feed(pose(95), 300)
+    const s = lowerAndFinish(h)
+    expect(s.reps).toBe(1)
+    expect(s.lastRep.counted).toBe(true)
+    expect(s.lastRep.faults).toContain('shrug')
+    expect(s.lastRep.quality).toBeLessThan(90)
+  })
+
+  it('does not count a rep when the shrug is held for most of the rep', () => {
+    const h = harness('shoulder-abduction')
+    h.calibrate(pose(10))
+    h.move((a) => pose(a), 10, 95, 600) // reaches the target cleanly…
+    h.feed(pose(95, SHRUG), 1500) // …then shrugs for the rest of the rep
+    h.move((a) => pose(a, SHRUG), 95, 10, 1200)
+    h.feed(pose(10), 200)
+    expect(h.snap.reps).toBe(0)
+    expect(h.snap.lastAttempt).toMatchObject({ counted: false, reason: SHRUG_MSG })
+  })
+})
+
+describe('mini squat (front view)', () => {
+  const squat = (drop, kneesIn = 0) => frontPose({ drop, kneesIn })
+
+  it('counts a squat from hip drop', () => {
+    const h = harness('mini-squat')
+    h.calibrate(squat(0))
+    expect(h.snap.status).toBe('active')
+    // 0.4 leg height → 0.03 drop = 7.5%
+    h.move((d) => squat(d), 0, 0.03, 1000)
+    expect(h.snap.phase).toBe('TOP')
+    h.move((d) => squat(d), 0.03, 0, 1000)
     expect(h.snap.reps).toBe(1)
     expect(h.snap.lastRep.faults).toEqual([])
+  })
 
-    h.move((d) => frontPose({ drop: d, kneesIn: d }), 0, 0.03, 1000)
-    h.feed(frontPose({ drop: 0.03, kneesIn: 0.03 }), 400)
-    h.move((d) => frontPose({ drop: d }), 0.03, 0, 1000)
-    expect(h.snap.reps).toBe(2)
+  it('counts a rep with a brief knee cave but flags it', () => {
+    const h = harness('mini-squat')
+    h.calibrate(squat(0))
+    h.move((d) => squat(d), 0, 0.03, 1200)
+    h.feed(squat(0.03, 0.03), 400)
+    h.move((d) => squat(d), 0.03, 0, 1200)
+    expect(h.snap.reps).toBe(1)
     expect(h.snap.lastRep.faults).toContain('kneesIn')
+  })
+
+  it('does not count a rep where the knees cave in for most of it', () => {
+    const h = harness('mini-squat')
+    h.calibrate(squat(0))
+    h.move((d) => squat(d, d), 0, 0.03, 1000)
+    h.feed(squat(0.03, 0.03), 400)
+    h.move((d) => squat(d, d), 0.03, 0, 1000)
+    expect(h.snap.reps).toBe(0)
+    expect(h.snap.lastAttempt).toMatchObject({ counted: false, reason: 'Push your knees outward, over your toes' })
   })
 })
