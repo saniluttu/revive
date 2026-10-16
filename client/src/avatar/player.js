@@ -13,15 +13,16 @@ import { PHASE_STEP, sampleAt, STEP_PHASE } from './motions.js'
 
 export const SPEEDS = [0.5, 1]
 
-export function createPlayer(motion, { onStep, onChange } = {}) {
+export function createPlayer(motion, { onStep, onChange, speed: initialSpeed = 1, loop: initialLoop = true, autoplay = false } = {}) {
   let time = 0
-  let playing = false
-  let speed = 1
-  let loop = true
+  let playing = autoplay
+  let speed = initialSpeed
+  let loop = initialLoop
   let rep = 0
   let stopAt = null // end of the phase being played on its own
   let source = 'loop'
   let lastPhase = null
+  const listeners = new Set()
 
   const state = () => ({ playing, speed, loop, rep })
   const changed = () => onChange?.(state())
@@ -31,6 +32,7 @@ export function createPlayer(motion, { onStep, onChange } = {}) {
     lastPhase = phase
     const event = { exerciseId: motion.id, phase, step: PHASE_STEP[phase], rep, source }
     onStep?.(event)
+    for (const l of listeners) l(event)
     emitAvatarStep(event)
   }
 
@@ -41,6 +43,12 @@ export function createPlayer(motion, { onStep, onChange } = {}) {
   const player = {
     motion,
     state,
+
+    /** Subscribe to this player's step events; returns an unsubscribe function. */
+    listen(listener) {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
 
     /** Advance by `dt` real seconds; returns the current sample { phase, progress, s, pose }. */
     tick(dt) {
@@ -79,7 +87,8 @@ export function createPlayer(motion, { onStep, onChange } = {}) {
       changed()
     },
     toggle() {
-      playing ? player.pause() : player.play()
+      if (playing) player.pause()
+      else player.play()
     },
     setSpeed(value) {
       speed = value

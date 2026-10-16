@@ -128,10 +128,11 @@ const MOTIONS = {
       hipR: [-90, 0, -2],
       kneeL: [180 - startAngle, 0, 0],
       kneeR: [180 - startAngle, 0, 0],
-      shoulderL: [-28, 0, 10],
-      shoulderR: [-28, 0, -10],
-      elbowL: [-48, 0, 0],
-      elbowR: [-48, 0, 0],
+      // hands resting on the thighs
+      shoulderL: [-14, 0, 3],
+      shoulderR: [-14, 0, -3],
+      elbowL: [-42, 0, 0],
+      elbowR: [-42, 0, 0],
     }
     return {
       tempo: { ...TEMPO, hold: 2.2 },

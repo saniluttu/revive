@@ -31,19 +31,19 @@ export const JOINTS = [
 // Segment lengths, joint to joint. The motions use these for foot-planted
 // kinematics (e.g. how far the hips drop in a squat).
 export const BODY = {
-  thigh: 0.42,
-  shin: 0.42,
+  thigh: 0.39,
+  shin: 0.39,
   ankleHeight: 0.08, // ankle joint above the floor
   hipWidth: 0.1, // hip joint from the midline
   hipDrop: 0.04, // hip joints below the pelvis origin
   spine: 0.08, // pelvis → spine
   chest: 0.2, // spine → chest
   shoulderHeight: 0.22, // chest → shoulder joints
-  shoulderWidth: 0.2,
-  neck: 0.25, // chest → neck
-  headOffset: 0.12, // neck → head centre
-  upperArm: 0.28,
-  forearm: 0.25,
+  shoulderWidth: 0.21,
+  neck: 0.24, // chest → neck
+  headOffset: 0.15, // neck → head centre
+  upperArm: 0.27,
+  forearm: 0.24,
 }
 
 /** Standing height of the pelvis origin (feet flat, legs straight). */
