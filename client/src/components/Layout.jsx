@@ -67,7 +67,9 @@ export default function Layout() {
   const [open, setOpen] = useState(false)
 
   const profileLanguage = user?.profile?.language
-  useEffect(() => applyProfileLanguage(profileLanguage), [profileLanguage])
+  useEffect(() => {
+    applyProfileLanguage(profileLanguage)
+  }, [profileLanguage])
 
   const items = user ? (NAV_BY_ROLE[user.role] ?? []) : LOGGED_OUT_NAV
   const bp = (BREAKPOINT[i18n.language] ?? BREAKPOINT.en)[items.length > 3 ? 'long' : 'short']

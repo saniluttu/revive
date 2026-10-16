@@ -78,7 +78,9 @@ export default function Chatbot() {
     }
   }, [])
 
-  useEffect(() => endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }), [messages, status])
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [messages, status])
 
   async function ask(question, viaVoice = false) {
     const text = question.trim()
