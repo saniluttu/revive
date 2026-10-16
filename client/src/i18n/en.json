@@ -559,6 +559,26 @@
     "repsSets": "{{reps}} reps × {{sets}} sets",
     "quality": "Quality {{quality}}",
     "pain": "Pain {{pain}}/10",
-    "repsInSets": "{{reps}} reps in {{sets}} sets"
+    "repsInSets": "{{reps}} reps in {{sets}} sets",
+    "totalReps": "Total reps",
+    "streak": "Streak",
+    "days_one": "day in a row",
+    "days_other": "days in a row",
+    "painChange": "Pain after exercise",
+    "painBetter": "Getting better",
+    "painWorse": "Getting worse",
+    "painSame": "No change",
+    "noPain": "Not recorded",
+    "byExercise": "By exercise",
+    "sessions": "Sessions",
+    "reps": "Reps",
+    "topMistake": "Most often: {{message}} ({{count}}×)",
+    "noMistakes": "Good form throughout",
+    "qualityTrend": "Quality over time",
+    "repsPerDay": "Reps per day (last 14 days)",
+    "painTrend": "Pain before and after",
+    "painBefore": "Before (0–10)",
+    "painAfter": "After (0–10)",
+    "needMore": "Do one more session to see the trend."
   }
 }

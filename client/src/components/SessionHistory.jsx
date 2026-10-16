@@ -1,144 +1,157 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatDate } from '../reviews/plan.js'
+import { BarChart, LineChart } from './charts.jsx'
+import { perExercise, repsPerDay, shortDay, summarize } from './progressStats.js'
+import { qualityTone, toneText } from './tone.js'
+import { Empty, ErrorNote, Section, StatCard, StatGrid } from './ui.jsx'
 
-const DAY_MS = 24 * 60 * 60 * 1000
 const TREND_SESSIONS = 14
+const QUALITY = '#059669'
+const PAIN = '#dc2626'
 
-function qualityColor(q) {
-  if (q >= 80) return 'text-brand-700'
-  if (q >= 50) return 'text-amber-600'
-  return 'text-red-600'
+const exerciseName = (t, id) => t(`exercises.${id}.name`, { defaultValue: id })
+
+function SummaryCards({ stats }) {
+  const { t } = useTranslation()
+  const pain = stats.pain
+  return (
+    <StatGrid>
+      <StatCard label={t('history.thisWeek')} value={stats.sessionsThisWeek} />
+      <StatCard label={t('history.totalReps')} value={stats.totalReps} />
+      <StatCard label={t('history.avgQuality')} value={stats.avgQuality ?? t('common.dash')} tone={qualityTone(stats.avgQuality)} />
+      <StatCard label={t('history.streak')} value={stats.streak} sub={t('history.days', { count: stats.streak })} />
+      <StatCard
+        label={t('history.painChange')}
+        value={pain ? `${pain.from} → ${pain.to}` : t('common.dash')}
+        sub={pain ? t(pain.change < 0 ? 'history.painBetter' : pain.change > 0 ? 'history.painWorse' : 'history.painSame') : t('history.noPain')}
+        tone={!pain ? 'default' : pain.change < 0 ? 'good' : pain.change > 0 ? 'bad' : 'default'}
+      />
+    </StatGrid>
+  )
 }
 
-function Tile({ label, children }) {
+function Mini({ label, value, className = '' }) {
   return (
-    <div className="rounded-3xl bg-white p-4 text-center shadow-sm ring-1 ring-slate-200">
-      <div className="text-base font-semibold text-slate-500">{label}</div>
-      <div className="mt-1 text-3xl font-extrabold tabular-nums sm:text-4xl">{children}</div>
+    <div>
+      <div className="text-sm font-semibold text-slate-500">{label}</div>
+      <div className={`text-2xl font-extrabold tabular-nums ${className}`}>{value}</div>
     </div>
   )
 }
 
-/**
- * Line chart of up to two series over the last sessions, oldest → newest.
- * Values are 0–100 (quality) or 0–10 (pain, scaled ×10).
- */
-function TrendChart({ sessions }) {
-  const { t, i18n } = useTranslation()
-  const points = sessions.slice(0, TREND_SESSIONS).reverse()
-  const series = [
-    { key: 'quality', label: t('history.trendQuality'), color: '#059669', value: (s) => s.quality },
-    { key: 'pain', label: t('history.trendPain'), color: '#dc2626', value: (s) => (s.painAfter == null ? null : s.painAfter * 10) },
-  ].filter((ser) => points.some((p) => ser.value(p) != null))
-  if (points.length < 2) return null
-
-  const W = 600
-  const H = 200
-  const pad = { l: 36, r: 12, t: 12, b: 28 }
-  const x = (i) => pad.l + (i * (W - pad.l - pad.r)) / (points.length - 1)
-  const y = (v) => pad.t + ((100 - v) * (H - pad.t - pad.b)) / 100
-  const day = (iso) => new Intl.DateTimeFormat(i18n.language === 'ml' ? 'ml-IN' : 'en-IN', { day: 'numeric', month: 'short' }).format(new Date(iso))
-
+function ExerciseBreakdown({ sessions }) {
+  const { t } = useTranslation()
   return (
-    <figure className="card space-y-3">
-      <figcaption className="flex flex-wrap gap-x-5 gap-y-1 text-base font-semibold">
-        {series.map((ser) => (
-          <span key={ser.key} className="inline-flex items-center gap-2">
-            <span className="inline-block h-1.5 w-6 rounded-full" style={{ background: ser.color }} />
-            {ser.label}
-          </span>
+    <Section title={t('history.byExercise')}>
+      <div className="grid gap-3 md:grid-cols-2">
+        {perExercise(sessions).map((r) => (
+          <div key={r.exercise} className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xl font-bold">{exerciseName(t, r.exercise)}</div>
+            <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+              <Mini label={t('history.sessions')} value={r.sessions} />
+              <Mini label={t('history.reps')} value={r.reps} />
+              <Mini label={t('history.avgQuality')} value={r.quality} className={toneText(qualityTone(r.quality))} />
+            </div>
+            {r.topMistake && (
+              <div className="mt-2 text-base text-amber-700">
+                {t('history.topMistake', { message: t(`rules.${r.topMistake.id}`), count: r.topMistake.count })}
+              </div>
+            )}
+          </div>
         ))}
-      </figcaption>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={series.map((s) => s.label).join(', ')}>
-        {[0, 50, 100].map((v) => (
-          <g key={v}>
-            <line x1={pad.l} x2={W - pad.r} y1={y(v)} y2={y(v)} stroke="#e2e8f0" />
-            <text x={pad.l - 6} y={y(v) + 4} textAnchor="end" fontSize="12" fill="#64748b">
-              {v}
-            </text>
-          </g>
-        ))}
-        {series.map((ser) => {
-          const pts = points.map((p, i) => [x(i), ser.value(p)]).filter(([, v]) => v != null)
-          return (
-            <g key={ser.key}>
-              <polyline
-                fill="none"
-                stroke={ser.color}
-                strokeWidth="3"
-                strokeLinejoin="round"
-                points={pts.map(([px, v]) => `${px},${y(v)}`).join(' ')}
-              />
-              {pts.map(([px, v], i) => (
-                <circle key={i} cx={px} cy={y(v)} r="4" fill={ser.color} />
-              ))}
-            </g>
-          )
-        })}
-        {[0, points.length - 1].map((i) => (
-          <text key={i} x={x(i)} y={H - 6} textAnchor={i === 0 ? 'start' : 'end'} fontSize="12" fill="#64748b">
-            {day(points[i].date)}
-          </text>
-        ))}
-      </svg>
-    </figure>
+      </div>
+    </Section>
   )
 }
 
-/** Summary tiles, quality/pain trend and recent sessions (Progress page and caregiver dashboard). */
+function RecentSessions({ sessions, limit }) {
+  const { t, i18n } = useTranslation()
+  return (
+    <Section title={t('history.recent')}>
+      <ul className="divide-y divide-slate-200">
+        {sessions.slice(0, limit).map((s) => {
+          const moves = Object.entries(s.wrongMoves ?? {})
+          return (
+            <li key={s.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3 text-lg">
+              <div className="min-w-0">
+                <div className="font-bold">{exerciseName(t, s.exercise)}</div>
+                <div className="text-base text-slate-500">{formatDate(s.date, i18n.language)}</div>
+                <div className={`text-base ${moves.length ? 'text-amber-700' : 'text-brand-700'}`}>
+                  {moves.length
+                    ? moves.map(([id, n]) => t('session.faultCount', { message: t(`rules.${id}`), count: n })).join(' · ')
+                    : t('history.noMistakes')}
+                </div>
+              </div>
+              <div className="flex flex-wrap items-baseline gap-x-4 text-right">
+                <span>{t('history.repsInSets', { reps: s.reps, sets: s.sets })}</span>
+                {s.painAfter != null && <span className="text-slate-600">{t('history.pain', { pain: s.painAfter })}</span>}
+                <span className={`font-bold ${toneText(qualityTone(s.quality))}`}>{t('history.quality', { quality: s.quality })}</span>
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+    </Section>
+  )
+}
+
+/**
+ * The full progress view: summary cards, quality trend, reps per day, pain before/after,
+ * per-exercise breakdown and recent sessions. Used on Progress and the caregiver dashboard.
+ */
 export default function SessionHistory({ sessions, loading, error, limit = 10 }) {
   const { t, i18n } = useTranslation()
   const [now] = useState(() => Date.now())
-  if (error) return <p className="card text-lg font-semibold text-red-700">{t('history.error')}</p>
-  if (loading) return <p className="card text-lg text-slate-500">{t('common.pleaseWait')}</p>
-  if (!sessions?.length) return <p className="card text-lg text-slate-500">{t('history.empty')}</p>
+  if (error) return <ErrorNote>{t('history.error')}</ErrorNote>
+  if (loading) return <Empty>{t('common.pleaseWait')}</Empty>
+  if (!sessions?.length) return <Empty>{t('history.empty')}</Empty>
 
-  const weekAgo = now - 7 * DAY_MS
-  const thisWeek = sessions.filter((s) => new Date(s.date).getTime() >= weekAgo)
-  const avg = Math.round(sessions.slice(0, TREND_SESSIONS).reduce((sum, s) => sum + s.quality, 0) / Math.min(sessions.length, TREND_SESSIONS))
+  const recent = sessions.slice(0, TREND_SESSIONS).reverse() // oldest first
+  const withPain = recent.filter((s) => s.painBefore != null || s.painAfter != null)
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Tile label={t('history.thisWeek')}>{thisWeek.length}</Tile>
-        <Tile label={t('history.repsThisWeek')}>{thisWeek.reduce((sum, s) => sum + s.reps, 0)}</Tile>
-        <Tile label={t('history.avgQuality')}>
-          <span className={qualityColor(avg)}>{avg}</span>
-        </Tile>
-        <Tile label={t('history.lastSession')}>
-          <span className="block text-lg font-bold sm:text-xl">{formatDate(sessions[0].date, i18n.language)}</span>
-        </Tile>
+      <SummaryCards stats={summarize(sessions, now)} />
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Section title={t('history.qualityTrend')}>
+          {recent.length < 2 ? (
+            <p className="text-lg text-slate-500">{t('history.needMore')}</p>
+          ) : (
+            <LineChart
+              ariaLabel={t('history.qualityTrend')}
+              max={100}
+              series={[{ key: 'quality', label: t('history.trendQuality'), color: QUALITY }]}
+              points={recent.map((s) => ({ label: shortDay(s.date, i18n.language), values: { quality: s.quality } }))}
+            />
+          )}
+        </Section>
+
+        <Section title={t('history.repsPerDay')}>
+          <BarChart
+            ariaLabel={t('history.repsPerDay')}
+            bars={repsPerDay(sessions, 14, now).map((d) => ({ label: shortDay(d.date, i18n.language), value: d.reps }))}
+          />
+        </Section>
       </div>
 
-      <TrendChart sessions={sessions} />
+      {withPain.length >= 2 && (
+        <Section title={t('history.painTrend')}>
+          <LineChart
+            ariaLabel={t('history.painTrend')}
+            max={10}
+            series={[
+              { key: 'before', label: t('history.painBefore'), color: '#f59e0b', dashed: true },
+              { key: 'after', label: t('history.painAfter'), color: PAIN },
+            ]}
+            points={withPain.map((s) => ({ label: shortDay(s.date, i18n.language), values: { before: s.painBefore, after: s.painAfter } }))}
+          />
+        </Section>
+      )}
 
-      <div className="card space-y-3">
-        <h3 className="text-2xl font-bold">{t('history.recent')}</h3>
-        <ul className="divide-y divide-slate-200">
-          {sessions.slice(0, limit).map((s) => {
-            const moves = Object.entries(s.wrongMoves ?? {})
-            return (
-              <li key={s.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3 text-lg">
-                <div className="min-w-0">
-                  <div className="font-bold">{t(`exercises.${s.exercise}.name`, { defaultValue: s.exercise })}</div>
-                  <div className="text-base text-slate-500">{formatDate(s.date, i18n.language)}</div>
-                  {moves.length > 0 && (
-                    <div className="text-base text-amber-700">
-                      {moves.map(([id, n]) => t('session.faultCount', { message: t(`rules.${id}`), count: n })).join(' · ')}
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-baseline gap-x-4 text-right">
-                  <span>{t('history.repsInSets', { reps: s.reps, sets: s.sets })}</span>
-                  {s.painAfter != null && <span className="text-slate-600">{t('history.pain', { pain: s.painAfter })}</span>}
-                  <span className={`font-bold ${qualityColor(s.quality)}`}>{t('history.quality', { quality: s.quality })}</span>
-                </div>
-              </li>
-            )
-          })}
-        </ul>
-      </div>
+      <ExerciseBreakdown sessions={sessions} />
+      <RecentSessions sessions={sessions} limit={limit} />
     </div>
   )
 }

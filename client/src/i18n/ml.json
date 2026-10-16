@@ -559,6 +559,26 @@
     "repsSets": "{{reps}} തവണ × {{sets}} സെറ്റ്",
     "quality": "നിലവാരം {{quality}}",
     "pain": "വേദന {{pain}}/10",
-    "repsInSets": "{{sets}} സെറ്റിൽ {{reps}} തവണ"
+    "repsInSets": "{{sets}} സെറ്റിൽ {{reps}} തവണ",
+    "totalReps": "ആകെ എണ്ണം",
+    "streak": "തുടർച്ച",
+    "days_one": "ദിവസം തുടർച്ചയായി",
+    "days_other": "ദിവസം തുടർച്ചയായി",
+    "painChange": "വ്യായാമത്തിന് ശേഷമുള്ള വേദന",
+    "painBetter": "മെച്ചപ്പെടുന്നു",
+    "painWorse": "കൂടുന്നു",
+    "painSame": "മാറ്റമില്ല",
+    "noPain": "രേഖപ്പെടുത്തിയിട്ടില്ല",
+    "byExercise": "വ്യായാമം തിരിച്ച്",
+    "sessions": "സെഷനുകൾ",
+    "reps": "എണ്ണം",
+    "topMistake": "കൂടുതലായി: {{message}} ({{count}} തവണ)",
+    "noMistakes": "മുഴുവൻ നല്ല രീതിയിൽ",
+    "qualityTrend": "നിലവാരം കാലക്രമത്തിൽ",
+    "repsPerDay": "ദിവസവും ചെയ്ത എണ്ണം (കഴിഞ്ഞ 14 ദിവസം)",
+    "painTrend": "വ്യായാമത്തിന് മുൻപും ശേഷവുമുള്ള വേദന",
+    "painBefore": "മുൻപ് (0–10)",
+    "painAfter": "ശേഷം (0–10)",
+    "needMore": "ട്രെൻഡ് കാണാൻ ഒരു സെഷൻ കൂടി ചെയ്യൂ."
   }
 }
