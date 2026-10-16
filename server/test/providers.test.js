@@ -107,3 +107,25 @@ test('the OpenRouter fallback for a report also gets the 60 s vision timeout', a
   }
   assert.equal(seen.at(-1), 60_000)
 })
+
+test('an invalid reply is re-asked once on the same model, with the problem, before moving on', async () => {
+  const bodies = []
+  let n = 0
+  globalThis.fetch = async (url, opts) => {
+    bodies.push(JSON.parse(opts.body))
+    const text = n++ === 0 ? 'Sure! Here is the analysis.' : '{"ok":1}'
+    // valid for any provider (earlier tests may have left Gemini cooling down)
+    return Response.json({ candidates: [{ content: { parts: [{ text }] } }], choices: [{ message: { content: text } }] })
+  }
+  const parse = (t) => {
+    const v = JSON.parse(t)
+    if (!v.ok) throw new Error('missing ok')
+    return v
+  }
+  const res = await route({ task: 'text', messages: [{ role: 'user', content: 'go' }], parse, parseRetries: 1 })
+  assert.deepEqual(res.data, { ok: 1 })
+  assert.equal(bodies.length, 2)
+  const asked = JSON.stringify(bodies[1])
+  assert.match(asked, /Sure! Here is the analysis\./, 'previous reply included')
+  assert.match(asked, /not valid \(/)
+})

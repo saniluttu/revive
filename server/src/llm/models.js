@@ -13,6 +13,7 @@ const OPENROUTER_FALLBACKS = 3 // OpenRouter tries these in order (`models` para
 export const DEFAULTS = {
   GEMINI_MODEL: 'gemini-3.8-flash',
   GROQ_MODEL: 'llama-3.3-70b-versatile',
+  GROQ_REPORT_MODEL: 'openai/gpt-oss-120b',
 }
 
 // Env var to change when a provider's model for a task is wrong
@@ -20,17 +21,18 @@ export const DEFAULTS = {
 export function modelEnvVar(provider, task, index = 0) {
   const vision = task === 'vision'
   if (provider === 'gemini') return index > 0 ? 'GEMINI_FALLBACK_MODEL' : 'GEMINI_MODEL'
-  if (provider === 'groq') return vision ? 'GROQ_VISION_MODEL' : 'GROQ_MODEL'
+  if (provider === 'groq') return vision ? 'GROQ_VISION_MODEL' : task === 'report' ? 'GROQ_REPORT_MODEL' : 'GROQ_MODEL'
   return vision ? 'OPENROUTER_VISION_MODEL' : 'OPENROUTER_MODEL'
 }
 
 const env = (name) => process.env[name]?.trim() || null
 
 // provider -> { text, vision }: a model id, a list of ids (OpenRouter), or null (unavailable).
-// Gemini also has `fallback`, used for both tasks.
+// Gemini also has `fallback`, used for every task; Groq has `report` (report text → JSON).
+// Other providers use their text model for the report task.
 const chosen = {
   gemini: { text: null, vision: null, fallback: null },
-  groq: { text: null, vision: null },
+  groq: { text: null, vision: null, report: null },
   openrouter: { text: null, vision: null },
 }
 let discovered = false
@@ -40,15 +42,22 @@ function fromEnv() {
   const gemini = env('GEMINI_MODEL') ?? DEFAULTS.GEMINI_MODEL
   return {
     gemini: { text: gemini, vision: gemini, fallback: env('GEMINI_FALLBACK_MODEL') },
-    groq: { text: env('GROQ_MODEL') ?? DEFAULTS.GROQ_MODEL, vision: env('GROQ_VISION_MODEL') },
+    groq: {
+      text: env('GROQ_MODEL') ?? DEFAULTS.GROQ_MODEL,
+      vision: env('GROQ_VISION_MODEL'),
+      report: env('GROQ_REPORT_MODEL') ?? DEFAULTS.GROQ_REPORT_MODEL,
+    },
     openrouter: { text: env('OPENROUTER_MODEL'), vision: env('OPENROUTER_VISION_MODEL') },
   }
 }
 
 /** @returns {string|string[]|null} */
 export function modelFor(provider, task) {
-  const key = task === 'vision' ? 'vision' : 'text'
-  return (discovered ? chosen : fromEnv())[provider]?.[key] ?? null
+  const models = (discovered ? chosen : fromEnv())[provider]
+  if (!models) return null
+  if (task === 'vision') return models.vision ?? null
+  if (task === 'report' && models.report !== undefined) return models.report ?? models.text ?? null
+  return models.text ?? null
 }
 
 /**
@@ -216,8 +225,14 @@ async function discoverGroq(base) {
     vision = null
   }
   vision ??= picks.vision[0] ?? null
-  if (!vision) console.log('[models] Groq has no vision model right now — skipping Groq for report reading.')
-  return { text, vision }
+  if (!vision) console.log('[models] Groq has no vision model right now — skipping Groq for report images.')
+
+  let report = base.groq.report
+  if (!ids.includes(report)) {
+    console.warn(`[models] Groq report model "${report}" is not available. Set GROQ_REPORT_MODEL in server/.env — using "${text}" for now.`)
+    report = text
+  }
+  return { text, vision, report }
 }
 
 async function discoverOpenRouter(base) {
@@ -268,6 +283,7 @@ export async function initModels() {
   const show = (v) => (Array.isArray(v) ? v.join(' → ') : (v ?? 'none'))
   for (const [name, m] of Object.entries(chosen)) {
     const fallback = m.fallback !== undefined ? `; fallback = ${show(m.fallback)}` : ''
-    console.log(`[models] ${name}: text = ${show(m.text)}; vision = ${show(m.vision)}${fallback}`)
+    const report = m.report !== undefined ? `; report = ${show(m.report)}` : ''
+    console.log(`[models] ${name}: text = ${show(m.text)}; vision = ${show(m.vision)}${report}${fallback}`)
   }
 }

@@ -84,17 +84,20 @@ The app runs without them; Firebase features are disabled until they're set.
   with a current one. A 404 at request time logs which env var to change. See the chosen
   models at `/api/health`.
 - **Report analysis (F3):** the Report page posts the PDF/photo to `POST /api/report/analyze`
-  (`server/src/routes/report.js`). The vision task goes to Gemini, then Groq (images only, if
-  it has a vision model), then OpenRouter. Replies are validated in `server/src/report/analysis.js`: only body parts and
-  exercise IDs from our library survive, and an invalid reply makes the router try the next
-  provider. Gemini is retried on 503 "high demand" / 429 (after 2 s, then 5 s), then its
-  fallback model (`GEMINI_FALLBACK_MODEL`, or another current flash / flash-lite picked at
-  startup) gets the same treatment, before Groq / OpenRouter. The page streams progress and shows
-  "trying again" meanwhile. Each good result is saved in `server/cache/` (git-ignored) by file
-  hash: the same file is answered instantly next time, and a saved answer is served if every
-  provider fails. **For the demo:** analyse the demo report once, then set `DEMO_MODE=true` so
-  known files always come from the cache (even after prompt changes). Run the server tests
-  with `cd server && npm test`.
+  (`server/src/routes/report.js`). **Text first:** the server extracts the report text locally
+  (`server/src/report/extractText.js`): a PDF's text layer via pdfjs-dist, or OCR with
+  tesseract.js (eng + mal) for photos and scanned PDFs (pages rendered with @napi-rs/canvas).
+  Only that text goes to the LLM, as a `report` task: Groq `openai/gpt-oss-120b` → Gemini (retried
+  on 503/429 after 2 s and 5 s, then its fallback model) → OpenRouter free text models, all in JSON
+  mode. An invalid reply is re-asked once, then the next model is tried. The file goes to a vision
+  model only if no text could be extracted. Replies are validated in `server/src/report/analysis.js`
+  (only our body parts and exercise IDs survive). The log shows extraction method, char count and
+  which provider answered. Each good result is saved in `server/cache/` (git-ignored) by file hash:
+  the same file is answered instantly next time, and a saved answer is served if every provider
+  fails. **For the demo:** analyse the demo report once, then set `DEMO_MODE=true` so known files
+  always come from the cache. The first OCR run downloads the language data (~11 MB) into
+  `server/cache/tessdata`. Test files: `node test/helpers/write-fixtures.js <dir>`. Run the server
+  tests with `cd server && npm test`.
 
 ## Build status
 

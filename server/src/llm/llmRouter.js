@@ -10,14 +10,17 @@ import { PROVIDERS } from './providers.js'
 
 const COOLDOWN_MS = 60_000
 
-// Per-call timeout by task: reading a report (free OpenRouter vision models are slow) gets 60 s
+// Per-call timeout by task: vision (free OpenRouter vision models are slow) 60 s,
+// report text → JSON 30 s, chat 15 s
 const TIMEOUT_MS = {
   vision: Number(process.env.LLM_VISION_TIMEOUT_MS) || 60_000,
+  report: Number(process.env.LLM_REPORT_TIMEOUT_MS) || 30_000,
   default: Number(process.env.LLM_TIMEOUT_MS) || 15_000,
 }
 
 // Provider order per task type
 const TASK_ORDER = {
+  report: ['groq', 'gemini', 'openrouter'], // report text → JSON (Groq's fast reasoning model first)
   vision: ['gemini', 'groq', 'openrouter'], // Groq only if it has a vision model and no PDF is attached
   chat: ['groq', 'gemini', 'openrouter'],
   text: ['gemini', 'groq', 'openrouter'],
@@ -38,6 +41,11 @@ const modelName = (model) => [model].flat().join(', ')
 
 function isCoolingDown(id) {
   return (keyState.get(id) || 0) > Date.now()
+}
+
+// Groq in JSON mode rejects output that isn't valid JSON with a 400 — same as an invalid reply
+function isInvalidJsonError(err) {
+  return err.status === 400 && /json_validate_failed|failed to generate json/i.test(err.message)
 }
 
 // The model itself is wrong (gone, renamed, no longer free) — every key will fail the same way
@@ -67,14 +75,16 @@ function* availableKeys(provider, model) {
 
 /**
  * @param {object} req
- * @param {'chat'|'vision'|'text'} [req.task='text']
+ * @param {'chat'|'vision'|'text'|'report'} [req.task='text']
  * @param {string} [req.system] system prompt
  * @param {{role:'user'|'assistant', content:string}[]} req.messages
  * @param {{mimeType:string, data:string}[]} [req.images] base64 images (vision)
  * @param {boolean} [req.json] ask for a JSON response
  * @param {number} [req.timeoutMs] per-call timeout (default 60 s for vision, 15 s otherwise)
  * @param {(text:string) => any} [req.parse] validates/parses the reply; if it throws,
- *   the next provider is tried (no cooldown — the provider itself is healthy)
+ *   the same model is asked again (up to `parseRetries` times, with the error), then the
+ *   next model / provider is tried (no cooldown — the provider itself is healthy)
+ * @param {number} [req.parseRetries=0]
  * @param {(event:{type:'retrying', provider:string, model:string}) => void} [req.onEvent]
  *   progress: called before every attempt after the first (retry, fallback model or provider)
  * @param {() => string} [req.fallback] cached/demo response if all providers fail
@@ -94,14 +104,34 @@ export async function route(req) {
 
     modelLoop: for (const [modelIndex, model] of modelsFor(name, task).entries()) {
       for (const { id, key } of availableKeys(provider, model)) {
-        for (let retry = 0; ; retry++) {
+        let messages = req.messages
+        let parseRetries = req.parseRetries ?? 0
+        // Ask the same model again, telling it what was wrong with its reply
+        const askAgain = (reply, problem) => {
+          parseRetries--
+          messages = [
+            ...messages,
+            ...(reply ? [{ role: 'assistant', content: reply }] : []),
+            { role: 'user', content: `Your reply was not valid (${problem}). Reply again with ONLY the JSON object described in the instructions.` },
+          ]
+        }
+        let backoff = 0
+        for (;;) {
           if (attempts++ > 0) req.onEvent?.({ type: 'retrying', provider: name, model: modelName(model) })
           const started = Date.now()
           let text
           try {
-            text = await provider.call({ ...req, task, key, model, timeoutMs })
+            text = await provider.call({ ...req, messages, task, key, model, timeoutMs })
           } catch (err) {
             errors.push(`${id}: ${err.message}`)
+            if (isInvalidJsonError(err)) {
+              console.warn(`[llmRouter] ${id} produced invalid JSON${parseRetries > 0 ? ' — asking again' : ''}`)
+              if (parseRetries > 0) {
+                askAgain(null, 'not valid JSON')
+                continue
+              }
+              continue modelLoop
+            }
             if (isModelError(err)) {
               const envVar = modelEnvVar(name, task, modelIndex)
               console.error(
@@ -110,9 +140,10 @@ export async function route(req) {
               )
               continue modelLoop
             }
-            if (provider.retry?.statuses.includes(err.status) && retry < delays.length) {
-              console.warn(`[llmRouter] ${id} failed (${err.message.slice(0, 120)}) — retrying in ${delays[retry]} ms`)
-              await sleep(delays[retry])
+            if (provider.retry?.statuses.includes(err.status) && backoff < delays.length) {
+              const delay = delays[backoff++]
+              console.warn(`[llmRouter] ${id} failed (${err.message.slice(0, 120)}) — retrying in ${delay} ms`)
+              await sleep(delay)
               continue
             }
             console.warn(`[llmRouter] ${id} failed: ${err.message}`)
@@ -127,7 +158,11 @@ export async function route(req) {
             data = req.parse ? req.parse(text) : undefined
           } catch (err) {
             errors.push(`${id}: invalid reply: ${err.message}`)
-            console.warn(`[llmRouter] ${id} gave an invalid reply: ${err.message}`)
+            console.warn(`[llmRouter] ${id} gave an invalid reply: ${err.message}${parseRetries > 0 ? ' — asking again' : ''}`)
+            if (parseRetries > 0) {
+              askAgain(text, err.message)
+              continue
+            }
             continue modelLoop // same model on another key would likely answer the same way
           }
           console.log(`[llmRouter] ${task} answered by ${name} / ${modelName(model)} (${Date.now() - started} ms)`)

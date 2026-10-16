@@ -10,7 +10,9 @@ const library = EXERCISE_CATALOG.map(
 ).join('\n')
 
 export const SYSTEM_PROMPT = `You are a physiotherapy assistant for Revive, a home rehab app for elderly patients in Kerala.
-You read the WRITTEN radiology report (text in a PDF or photo). Do not interpret raw scan images.
+You read the WRITTEN radiology report. Usually you get its text, extracted from a PDF or by OCR
+from a photo, so expect OCR mistakes (broken words, odd characters) and read through them.
+Occasionally you get the report file itself. Never interpret raw scan images.
 
 Our exercise library has exactly these exercises:
 ${library}
@@ -37,9 +39,20 @@ Rules:
 
 export const USER_PROMPT = 'Here is my medical report. Analyse it and reply with the JSON object.'
 
-// Changes whenever the prompt or exercise library changes, so cached analyses made
+const MAX_REPORT_CHARS = 20_000
+
+/** User message for the text pipeline: the report text extracted on the server. */
+export function textPrompt(text) {
+  const body = text.length > MAX_REPORT_CHARS ? `${text.slice(0, MAX_REPORT_CHARS)}\n[…truncated]` : text
+  return `Here is the text of my medical report:\n\n<<<REPORT\n${body}\nREPORT>>>\n\nAnalyse it and reply with the JSON object.`
+}
+
+// Changes whenever the prompts or exercise library change, so cached analyses made
 // with an older prompt are redone (except in DEMO_MODE, see routes/report.js)
-export const PROMPT_VERSION = createHash('sha256').update(SYSTEM_PROMPT + USER_PROMPT).digest('hex').slice(0, 12)
+export const PROMPT_VERSION = createHash('sha256')
+  .update(SYSTEM_PROMPT + USER_PROMPT + textPrompt(''))
+  .digest('hex')
+  .slice(0, 12)
 
 const isObj = (v) => v != null && typeof v === 'object' && !Array.isArray(v)
 const str = (v) => (typeof v === 'string' ? v.trim() : '')

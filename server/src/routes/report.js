@@ -1,7 +1,8 @@
 import { Router } from 'express'
 import { route } from '../llm/llmRouter.js'
-import { parseAnalysis, PROMPT_VERSION, SYSTEM_PROMPT, USER_PROMPT } from '../report/analysis.js'
+import { parseAnalysis, PROMPT_VERSION, SYSTEM_PROMPT, textPrompt, USER_PROMPT } from '../report/analysis.js'
 import { getCached, hashFile, saveCached } from '../report/cache.js'
+import { extractText } from '../report/extractText.js'
 
 const router = Router()
 
@@ -20,6 +21,8 @@ function sniffType(bytes) {
   return null
 }
 const MAX_BYTES = 10 * 1024 * 1024
+// Below this much extracted text we can't analyse it as text and send the file to a vision model
+const MIN_TEXT_CHARS = 20
 
 const fromCache = (entry, message) => ({
   analysis: entry.analysis,
@@ -30,6 +33,10 @@ const fromCache = (entry, message) => ({
 
 // POST /api/report/analyze  { file: { name, mimeType, data (base64) } }
 // → { analysis, provider, cached?, message? }  or  { error } with 4xx/503
+//
+// Text first: the report's text is extracted here (PDF text layer, or OCR for
+// photos and scanned PDFs) and only the text goes to the LLM (Groq → Gemini →
+// OpenRouter). The file itself goes to a vision model only if no text was found.
 //
 // With `Accept: application/x-ndjson` the reply is streamed, one JSON per line, so
 // the page can show progress while the AI is retried:
@@ -57,20 +64,44 @@ router.post('/analyze', async (req, res) => {
     res.flushHeaders()
   }
 
-  const result = await route({
-    task: 'vision',
+  const extraction = await extractText(bytes, mimeType)
+  const langs = extraction.langs ? ` (${extraction.langs})` : ''
+  console.log(
+    `[report] extracted ${extraction.text.length} chars via ${extraction.method}${langs} in ${extraction.ms} ms` +
+      (extraction.pages ? `, ${extraction.pages} page(s)` : '') +
+      (extraction.error ? ` — extraction error: ${extraction.error}` : ''),
+  )
+
+  const common = {
     system: SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: USER_PROMPT }],
-    images: [{ name, mimeType, data }],
     json: true,
     parse: parseAnalysis,
+    parseRetries: 1,
     onEvent: stream ? (e) => send({ type: e.type, provider: e.provider }) : undefined,
-  })
+  }
+  const useText = extraction.text.length >= MIN_TEXT_CHARS
+  if (!useText) console.log('[report] no usable text — falling back to a vision model with the file')
+  const source = useText ? extraction.method : 'vision'
+  const result = useText
+    ? await route({ ...common, task: 'report', messages: [{ role: 'user', content: textPrompt(extraction.text) }] })
+    : await route({
+        ...common,
+        task: 'vision',
+        messages: [{ role: 'user', content: USER_PROMPT }],
+        images: [{ name, mimeType, data }],
+      })
+  if (!result.fallback) console.log(`[report] analysed by ${result.provider} / ${result.model} from ${source}`)
 
   let reply
   let error = null
   if (!result.fallback) {
-    await saveCached(hash, { analysis: result.data, provider: result.provider, model: result.model, promptVersion: PROMPT_VERSION })
+    await saveCached(hash, {
+      analysis: result.data,
+      provider: result.provider,
+      model: result.model,
+      source,
+      promptVersion: PROMPT_VERSION,
+    })
     reply = { analysis: result.data, provider: result.provider }
   } else if (cached) {
     console.log(`[report] all providers failed — serving cached analysis from ${cached.savedAt}`)
