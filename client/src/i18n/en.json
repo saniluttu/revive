@@ -435,5 +435,59 @@
       "title": "Session Summary",
       "subtitle": "Reps, quality and pain level for this session."
     }
+  },
+  "voice": {
+    "cues": {
+      "rep": [
+        "One",
+        "Two",
+        "Three",
+        "Four",
+        "Five",
+        "Six",
+        "Seven",
+        "Eight",
+        "Nine",
+        "Ten",
+        "Eleven",
+        "Twelve",
+        "Thirteen",
+        "Fourteen",
+        "Fifteen",
+        "Sixteen",
+        "Seventeen",
+        "Eighteen",
+        "Nineteen",
+        "Twenty"
+      ],
+      "wellDone": "Well done!",
+      "rest": "Rest now.",
+      "setComplete": "Set complete.",
+      "notCounted": "Not counted.",
+      "higher": "Go a little higher."
+    },
+    "cuesOn": "Voice on",
+    "cuesOff": "Voice off",
+    "ask": "Ask a question",
+    "askHint": "Tap the mic and ask about your exercises, in Malayalam or English.",
+    "micStart": "Start speaking",
+    "micStop": "Stop and send",
+    "listening": "Listening… tap again when you are done",
+    "transcribing": "Understanding your question…",
+    "thinking": "Thinking…",
+    "speaking": "Speaking…",
+    "stopSpeaking": "Stop speaking",
+    "youAsked": "You asked",
+    "answer": "Revive says",
+    "redFlag": "Please stop exercising now and contact your doctor.",
+    "disclaimer": "Revive gives general guidance about your exercises. It is not medical advice — ask your doctor or physiotherapist if you are unsure.",
+    "errors": {
+      "micDenied": "Microphone access was blocked. Allow the microphone in your browser and try again.",
+      "noMic": "This device has no microphone we can use.",
+      "notHeard": "Sorry, we didn't catch that. Please try again.",
+      "sttUnavailable": "Voice input is not working right now. Please try again later.",
+      "aiUnavailable": "Our AI helper is busy right now. Please try again in a minute.",
+      "network": "Can't reach the Revive server. Check your connection and try again."
+    }
   }
 }

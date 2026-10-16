@@ -4,6 +4,7 @@ import useAuth from '../auth/useAuth.js'
 import PlanStatus from '../reviews/PlanStatus.jsx'
 import useReviews from '../reviews/useReviews.js'
 import { latestReviewFor } from '../services/reviewService.js'
+import VoiceAsk from '../voice/VoiceAsk.jsx'
 
 const ACTIONS = [
   { to: '/session', title: 'home.startTitle', text: 'home.startText' },
@@ -31,6 +32,8 @@ export default function PatientHome() {
       </div>
 
       {review && <PlanStatus review={review} />}
+
+      <VoiceAsk />
 
       <div className="grid gap-4 sm:grid-cols-2">
         {ACTIONS.map((a, i) => (

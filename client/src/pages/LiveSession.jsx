@@ -11,6 +11,9 @@ import { doctorName, planExercises } from '../reviews/plan.js'
 import { PlanExerciseList } from '../reviews/PlanStatus.jsx'
 import useReviews, { useSessionExercise } from '../reviews/useReviews.js'
 import { latestReviewFor, REVIEW_STATUS } from '../services/reviewService.js'
+import { preloadCues, sayCues, stopCues, unlockAudio } from '../voice/cuePlayer.js'
+import { cuesForUpdate } from '../voice/cues.js'
+import VoiceAsk from '../voice/VoiceAsk.jsx'
 
 const UI_INTERVAL_MS = 100 // push counter state to React at ~10 Hz
 
@@ -165,7 +168,7 @@ function SessionDone({ snap, onRestart }) {
 }
 
 export default function LiveSession() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const tm = useMessage()
   const [params, setParams] = useSearchParams()
   const { exercise, planLocked, planReviewer } = useSessionExercise(params.get('exercise'), params.get('plan'))
@@ -173,9 +176,15 @@ export default function LiveSession() {
   const counterRef = useRef(null)
   const lastUiRef = useRef({ time: 0, attempts: 0, status: null })
   const [snap, setSnap] = useState(null)
+  // Spoken cues (F7): played from the pre-generated pack, in the UI language
+  const prevSnapRef = useRef(null)
+  const [cuesOn, setCuesOn] = useState(true)
+  const cuesOnRef = useRef(true)
+  const assistantBusyRef = useRef(false)
 
   const resetCounter = useCallback(() => {
     counterRef.current = exercise ? createRepCounter(exercise) : null
+    prevSnapRef.current = null
     setSnap(counterRef.current?.snapshot() ?? null)
   }, [exercise])
 
@@ -185,6 +194,9 @@ export default function LiveSession() {
     const counter = counterRef.current
     if (!counter) return
     const next = counter.update(landmarks, width, height)
+    const cues = cuesForUpdate(prevSnapRef.current, next)
+    prevSnapRef.current = next
+    if (cues && cuesOnRef.current && !assistantBusyRef.current) sayCues(cues, i18n.language)
     // Rep finished (counted or not) or status change → update immediately; otherwise throttle
     const now = performance.now()
     const last = lastUiRef.current
@@ -192,11 +204,38 @@ export default function LiveSession() {
       lastUiRef.current = { time: now, attempts: next.attempts, status: next.status }
       setSnap(next)
     }
+  }, [i18n])
+
+  useEffect(() => {
+    if (exercise) preloadCues(i18n.language)
+  }, [exercise, i18n.language])
+
+  useEffect(() => stopCues, [])
+
+  function toggleCues() {
+    cuesOnRef.current = !cuesOn
+    if (cuesOn) stopCues()
+    setCuesOn(!cuesOn)
+  }
+
+  const onAssistantBusy = useCallback((busy) => {
+    assistantBusyRef.current = busy
+    if (busy) stopCues() // don't talk over the patient or the assistant
   }, [])
 
   const { videoRef, canvasRef, status, error, angles, missing, fps, start, stop } = usePoseTracker({ onFrame })
   const running = status === 'running'
   const framingWarning = exercise ? snap?.missing?.length > 0 : missing.length > 0
+
+  function startCamera() {
+    unlockAudio() // a click lets the browser play the cues
+    start()
+  }
+
+  function stopCamera() {
+    stopCues()
+    stop()
+  }
 
   function skipRest() {
     setSnap(counterRef.current.skipRest())
@@ -227,15 +266,22 @@ export default function LiveSession() {
             </select>
           )}
         </div>
-        {running ? (
-          <button className="btn-secondary" onClick={stop}>
-            {t('session.stopCamera')}
-          </button>
-        ) : (
-          <button className="btn-primary" onClick={start} disabled={status === 'loading'}>
-            {status === 'loading' ? t('session.starting') : t('session.startCamera')}
-          </button>
-        )}
+        <div className="flex flex-wrap gap-3">
+          {exercise && (
+            <button type="button" className="btn-secondary" onClick={toggleCues} aria-pressed={cuesOn}>
+              {t(cuesOn ? 'voice.cuesOn' : 'voice.cuesOff')}
+            </button>
+          )}
+          {running ? (
+            <button className="btn-secondary" onClick={stopCamera}>
+              {t('session.stopCamera')}
+            </button>
+          ) : (
+            <button className="btn-primary" onClick={startCamera} disabled={status === 'loading'}>
+              {status === 'loading' ? t('session.starting') : t('session.startCamera')}
+            </button>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -327,6 +373,8 @@ export default function LiveSession() {
           </div>
         )}
       </div>
+
+      <VoiceAsk exerciseId={exercise?.id ?? null} onBusyChange={onAssistantBusy} />
 
       {exercise && (
         <div className="grid gap-4 md:grid-cols-2">

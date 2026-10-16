@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "test": "node --test \"test/*.test.js\""
+    "test": "node --test \"test/*.test.js\"",
+    "voice-cues": "node scripts/generate-voice-cues.js"
   },
   "license": "ISC",
   "dependencies": {

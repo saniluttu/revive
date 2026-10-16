@@ -2,8 +2,10 @@ import 'dotenv/config'
 import cors from 'cors'
 import express from 'express'
 import { initModels } from './llm/models.js'
+import chatRouter from './routes/chat.js'
 import healthRouter from './routes/health.js'
 import reportRouter from './routes/report.js'
+import voiceRouter from './routes/voice.js'
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -13,6 +15,8 @@ app.use(express.json({ limit: '15mb' })) // report images arrive as base64
 
 app.use('/api/health', healthRouter)
 app.use('/api/report', reportRouter)
+app.use('/api/chat', chatRouter)
+app.use('/api', voiceRouter) // /api/tts, /api/stt
 
 app.use((err, _req, res, _next) => {
   if (err.type === 'entity.too.large') return res.status(413).json({ error: 'file_too_large' })

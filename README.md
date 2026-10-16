@@ -56,6 +56,7 @@ Requests to `/api/*` are proxied to the backend on port 5000.
 | `GEMINI_API_KEYS` | One or more Gemini keys, comma-separated |
 | `GROQ_API_KEYS` | One or more Groq keys, comma-separated |
 | `OPENROUTER_API_KEYS` | One or more OpenRouter keys, comma-separated |
+| `SARVAM_API_KEY` | Sarvam AI key for voice: text-to-speech, speech-to-text, cue pack |
 | `*_MODEL` | Optional model overrides |
 
 **client/.env**: `VITE_FIREBASE_*` values from Firebase console → Project settings.
@@ -98,6 +99,21 @@ The app runs without them; Firebase features are disabled until they're set.
   always come from the cache. The first OCR run downloads the language data (~11 MB) into
   `server/cache/tessdata`. Test files: `node test/helpers/write-fixtures.js <dir>`. Run the server
   tests with `cd server && npm test`.
+- **Voice (F7, F10):** Sarvam AI behind `POST /api/tts` (`{ text, lang: ml-IN|en-IN }` → MP3,
+  `bulbul:v3`) and `POST /api/stt?lang=&provider=sarvam|groq` (raw audio → `{ text }`, `saaras:v4`,
+  Groq Whisper as the second server engine). If TTS fails the browser's `speechSynthesis` speaks.
+  Speech-to-text order: Sarvam → the browser's Web Speech transcript (recorded alongside) →
+  Groq Whisper. **Cue pack:** `cd server && npm run voice-cues` pre-generates every Live Session
+  cue (rep numbers 1–20, one correction per form rule, well done, rest, set complete, not counted,
+  go higher) in Malayalam and English into `client/public/audio/{ml,en}/` + `manifest.json`, from the
+  text in `en.json` / `ml.json`; re-run it after changing that text (only changed cues are redone,
+  `--force` redoes all). The session plays the pack from memory (no API calls), in the UI language,
+  with a 3 s cooldown per cue; a cue missing from the pack is spoken by `speechSynthesis`.
+- **Voice questions (F10):** the mic on Home and Live Session records → speech-to-text →
+  `POST /api/chat` (llmRouter `chat` task; knows the current exercise and the approved plan;
+  exercises only). Red-flag symptoms (chest pain, severe pain, numbness, swelling, a fall…) are
+  caught in `server/src/voice/redFlags.js` before the AI and answered "stop and contact your
+  doctor". The reply is shown and spoken.
 
 ## Build status
 
