@@ -10,6 +10,8 @@
 // mainFault     – the exercise's main compensation; a rep where it is held for
 //                 most of the rep is not counted
 // blockAtTarget – faults that void the rep if active as the target is crossed
+// voidOn        – faults that void the rep whenever they are confirmed during it
+// strict        – extra rest / tempo / peak checks (see ABDUCTION)
 
 // Names, conditions, setup, steps, metric labels and cues are in i18n
 // (`bodyParts.<id>`, `exercises.<id>`); difficulty is a key into `difficulty.*`.
@@ -44,6 +46,40 @@ function squatDepth(f, base) {
   return maxOf(fromAngle, fromHeight)
 }
 
+/**
+ * Strict, cheat-proof shoulder abduction (front view): every threshold in one place.
+ * Angles are the hip–shoulder–elbow angle in degrees; times in ms; distances are
+ * fractions of the calibrated shoulder width / resting arm length. Used by
+ * repCounter.js (rest, tempo, peaks, top limit) and rules.js (form checks).
+ */
+export const ABDUCTION = {
+  // 1. Start from rest: arm down and still before a rep can start
+  restMax: 30,
+  restHoldMs: 500,
+  stillDeg: 6, // at rest and at the top, the angle may wander this much and still count as "still"
+  // 2. Controlled tempo
+  topMin: 75, // hold at or above this…
+  idealTop: [85, 110], // …ideally in this range
+  minUpMs: 1000, // rest → top
+  minHoldMs: 500, // held still at the top
+  minDownMs: 1000, // top → rest
+  // 3. Upper limit: only up to shoulder height
+  maxPeak: 120,
+  // 4. Straight arm
+  minElbowAngle: 150,
+  // 5. Body still (vs calibration)
+  maxBodyDrift: 0.08, // hip midpoint / ankles, as a fraction of shoulder width
+  maxTrunkTilt: 10,
+  // 6. Side plane: above this angle the arm must reach out sideways, not forward
+  sidePlaneFrom: 45,
+  minArmLength: 0.8, // projected shoulder→wrist / resting length (lower = arm swung towards the camera)
+  minReach: 0.75, // outward wrist distance from the shoulder / (resting arm length × sin(angle))
+  // 7. One smooth motion: angle reversals bigger than this are a second peak (waving, bouncing)
+  jitterDeg: 8,
+  // 8. Landmark visibility of the working arm (wrist, elbow, shoulder, hip)
+  minVisibility: 0.6,
+}
+
 export const EXERCISES = [
   {
     id: 'shoulder-abduction',
@@ -59,13 +95,15 @@ export const EXERCISES = [
     // extra abduction.
     metric: (f) => maxOf(f.sides.left.shoulderAngle, f.sides.right.shoulderAngle),
     unit: '°',
-    rest: 30,
-    target: 85,
+    rest: ABDUCTION.restMax,
+    target: ABDUCTION.topMin,
     ideal: 90,
-    meter: [0, 120],
-    rules: ['leanSideways', 'shrug'],
+    meter: [0, 130],
+    rules: ['leanSideways', 'shrug', 'straightArm', 'standStill', 'sideways'],
     mainFault: 'shrug',
     blockAtTarget: ['shrug'],
+    voidOn: ['straightArm', 'standStill', 'leanSideways', 'sideways'],
+    strict: ABDUCTION,
   },
   {
     id: 'shoulder-flexion',

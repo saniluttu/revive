@@ -35,6 +35,34 @@ function qualityColor(q) {
   return 'text-red-600'
 }
 
+// Tuning aid (press D): raw counter state. Developer-only, so the labels are not translated.
+function DebugOverlay({ snap }) {
+  const d = snap.debug
+  const ms = (v) => (v == null ? '–' : `${(v / 1000).toFixed(2)} s`)
+  const rows = [
+    ['angle', d.angle == null ? '–' : `${d.angle}°`],
+    ['elbow', d.elbow == null ? '–' : `${d.elbow}°`],
+    ['phase', snap.phase],
+    ['rest', `${ms(d.restMs)}${d.armed ? ' ✓ armed' : ''}`],
+    ['up', ms(d.upMs)],
+    ['hold', ms(d.holdMs)],
+    ['down', ms(d.downMs)],
+    ['peak', d.peak == null ? '–' : `${d.peak}° (${d.peaks} turns)`],
+    ['faults', snap.activeFaults.join(', ') || '–'],
+    ['reject', snap.rejected ?? d.lastReject ?? '–'],
+  ]
+  return (
+    <dl className="absolute left-3 top-3 grid grid-cols-[auto_auto] gap-x-3 rounded-xl bg-black/75 px-3 py-2 font-mono text-sm text-white">
+      {rows.map(([k, v]) => (
+        <div key={k} className="contents">
+          <dt className="text-slate-400">{k}</dt>
+          <dd className={k === 'reject' && snap.rejected ? 'text-red-300' : ''}>{v}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
 function StatTile({ label, children, className = '' }) {
   return (
     <div className="rounded-3xl bg-white p-4 text-center shadow-sm ring-1 ring-slate-200">
@@ -195,6 +223,16 @@ export default function LiveSession() {
   // Spoken cues (F7): played from the pre-generated pack, in the UI language
   const prevSnapRef = useRef(null)
   const [cuesOn, setCuesOn] = useState(true)
+  const [showDebug, setShowDebug] = useState(false)
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key.toLowerCase() !== 'd' || e.ctrlKey || e.metaKey || e.altKey) return
+      if (e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return
+      setShowDebug((on) => !on)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
   const cuesOnRef = useRef(true)
   const assistantBusyRef = useRef(false)
   // Instructions read aloud step by step; counting waits until they finish
@@ -438,6 +476,8 @@ export default function LiveSession() {
           {running && (
             <div className="absolute right-3 top-3 rounded-lg bg-black/60 px-2 py-1 text-sm text-white">{t('session.fps', { fps })}</div>
           )}
+
+          {showDebug && exercise && snap && <DebugOverlay snap={snap} />}
         </div>
 
         {exercise && snap && (
