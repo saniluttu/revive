@@ -6,6 +6,7 @@ import { applyProfileLanguage } from '../i18n/index.js'
 import logOutAndReset from '../auth/logOutAndReset.js'
 import { homePathFor, ROLES } from '../services/authService.js'
 import LanguageToggle from './LanguageToggle.jsx'
+import { Icon } from './ui.jsx'
 
 const NAV_BY_ROLE = {
   [ROLES.PATIENT]: [
@@ -22,27 +23,50 @@ const NAV_BY_ROLE = {
 }
 const LOGGED_OUT_NAV = [{ to: '/login', label: 'nav.login' }]
 
-// Full class strings so Tailwind can see them. The patient menu is long, so it
-// collapses into the hamburger below xl (1720px in Malayalam, whose labels are
-// wider); the short menus stay inline from sm (md in Malayalam).
+// Full class strings so Tailwind can see them. The pill nav has its own row
+// under the header from lg (xl for the long patient menu in Malayalam, whose
+// labels are wider); below that it is in the hamburger menu.
 const BREAKPOINT = {
   en: {
-    long: { desktop: 'hidden xl:flex', mobile: 'xl:hidden' },
-    short: { desktop: 'hidden sm:flex', mobile: 'sm:hidden' },
+    long: { desktop: 'hidden lg:flex', mobile: 'lg:hidden' },
+    short: { desktop: 'hidden md:flex', mobile: 'md:hidden' },
   },
   ml: {
-    long: { desktop: 'hidden min-[1720px]:flex', mobile: 'min-[1720px]:hidden' },
+    long: { desktop: 'hidden xl:flex', mobile: 'xl:hidden' },
     short: { desktop: 'hidden md:flex', mobile: 'md:hidden' },
   },
 }
 
-const itemBase = 'block whitespace-nowrap rounded-xl font-semibold transition'
-const itemDesktop = 'px-2.5 py-1.5 text-base'
-const itemMobile = 'px-4 py-3 text-lg'
+const itemBase = 'block whitespace-nowrap rounded-full font-semibold transition'
+const itemDesktop = 'px-3.5 py-2 text-base'
+const itemMobile = 'px-5 py-3 text-body-lg'
 
 function navClass(size) {
   return ({ isActive }) =>
-    `${itemBase} ${size} ${isActive ? 'bg-brand-600 text-white' : 'text-slate-700 hover:bg-brand-50'}`
+    `${itemBase} ${size} ${isActive ? 'bg-primary-container text-on-primary' : 'text-on-surface-variant hover:bg-surface-container-low'}`
+}
+
+const initials = (name) =>
+  String(name ?? '')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('')
+
+/** The signed-in user's initials in a circle, with their name on wider screens. */
+function UserBadge({ user }) {
+  const { t } = useTranslation()
+  const name = user.profile?.name || user.email || ''
+  return (
+    <span className="hidden shrink-0 items-center gap-2 sm:flex" title={t('nav.account', { name })}>
+      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-fixed text-base font-bold text-primary" aria-hidden="true">
+        {initials(name) || <Icon name="person" />}
+      </span>
+      <span className="hidden max-w-[10rem] truncate text-base font-semibold xl:inline">{name}</span>
+      <span className="sr-only">{t('nav.account', { name })}</span>
+    </span>
+  )
 }
 
 function MenuIcon({ open }) {
@@ -91,35 +115,50 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-2">
-          <Link to={homePathFor(user)} className="flex shrink-0 items-center gap-2" onClick={() => setOpen(false)}>
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-600 text-xl font-bold text-white">
+      <header className="sticky top-0 z-20 border-b border-outline-variant/50 bg-white/95 shadow-soft backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-2.5">
+          <Link to={homePathFor(user)} className="flex shrink-0 items-center gap-2.5" onClick={() => setOpen(false)}>
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-xl font-bold text-on-primary sm:h-11 sm:w-11">
               {t('app.logo')}
             </span>
-            <span className="hidden text-2xl font-bold text-brand-800 min-[400px]:inline">{t('app.name')}</span>
+            <span className="hidden leading-tight min-[400px]:block">
+              <span className="block text-2xl font-extrabold text-primary">{t('app.name')}</span>
+              <span lang="ml" className="block text-sm text-on-surface-variant">
+                {t('app.tagline')}
+              </span>
+            </span>
           </Link>
 
-          <div className="flex items-center gap-2">
-            <nav className={`${bp.desktop} items-center gap-0.5`}>{renderItems(itemDesktop)}</nav>
-
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <LanguageToggle />
+
+            <a
+              href="tel:108"
+              aria-label={t('nav.emergencyLabel')}
+              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-error p-1.5 text-base font-bold text-white shadow-soft transition hover:bg-red-800 sm:px-4"
+            >
+              <Icon name="call" fill />
+              <span className="hidden sm:inline">{t('nav.emergency')}</span>
+            </a>
+
+            {user && <UserBadge user={user} />}
 
             {/* Always visible (not inside the menu), so it's easy to hand the device over */}
             {user && (
               <button
                 type="button"
                 onClick={handleLogout}
-                className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border-2 border-red-200 px-3 py-1.5 text-base font-semibold text-red-700 transition hover:bg-red-50"
+                aria-label={t('nav.logout')}
+                className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border-2 border-outline-variant p-1.5 text-base font-semibold text-on-surface-variant transition hover:bg-surface-container-low sm:px-3 sm:py-1.5"
               >
                 <LogoutIcon />
-                {t('nav.logout')}
+                <span className="hidden xl:inline">{t('nav.logout')}</span>
               </button>
             )}
 
             <button
               type="button"
-              className={`${bp.mobile} rounded-xl p-2 text-slate-700 hover:bg-slate-100`}
+              className={`${bp.mobile} rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container-low`}
               onClick={() => setOpen((o) => !o)}
               aria-expanded={open}
               aria-controls="mobile-nav"
@@ -130,8 +169,14 @@ export default function Layout() {
           </div>
         </div>
 
+        {items.length > 0 && (
+          <div className={`${bp.desktop} mx-auto max-w-7xl px-4 pb-2.5`}>
+            <nav className="flex items-center gap-1 rounded-full bg-surface-container-low p-1">{renderItems(itemDesktop)}</nav>
+          </div>
+        )}
+
         {open && (
-          <nav id="mobile-nav" className={`${bp.mobile} grid gap-1 border-t border-slate-200 px-4 py-3`}>
+          <nav id="mobile-nav" className={`${bp.mobile} grid gap-1 border-t border-outline-variant/50 px-4 py-3`}>
             {renderItems(itemMobile, () => setOpen(false))}
           </nav>
         )}

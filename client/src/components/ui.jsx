@@ -2,19 +2,44 @@
 
 import { toneText } from './tone.js'
 
-/** A big number with a label (and an optional line under it). */
-export function StatCard({ label, value, sub, tone = 'default' }) {
+/** Material Symbols Outlined icon (decorative). */
+export function Icon({ name, fill = false, className = '' }) {
   return (
-    <div className="rounded-3xl bg-white p-4 text-center shadow-sm ring-1 ring-slate-200 sm:p-5">
-      <div className="text-base font-semibold text-slate-500 sm:text-lg">{label}</div>
+    <span className={`icon ${fill ? 'icon-fill' : ''} ${className}`} aria-hidden="true">
+      {name}
+    </span>
+  )
+}
+
+/** Page heading + subtitle. */
+export function PageHeader({ title, subtitle, action }) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="min-w-0">
+        <h1 className="page-title">{title}</h1>
+        {subtitle && <p className="page-subtitle">{subtitle}</p>}
+      </div>
+      {action}
+    </div>
+  )
+}
+
+/** A big number with a label (and an optional line under it). */
+export function StatCard({ label, value, sub, tone = 'default', icon }) {
+  return (
+    <div className="rounded-xl bg-surface-container-lowest p-5 text-center shadow-soft ring-1 ring-outline-variant/40">
+      <div className="flex items-center justify-center gap-1.5 text-label-lg text-on-surface-variant">
+        {icon && <Icon name={icon} className="text-primary" />}
+        {label}
+      </div>
       <div className={`mt-1 text-4xl font-extrabold tabular-nums sm:text-5xl ${toneText(tone)}`}>{value}</div>
-      {sub && <div className="mt-1 text-base text-slate-500">{sub}</div>}
+      {sub && <div className="mt-1 text-base text-on-surface-variant">{sub}</div>}
     </div>
   )
 }
 
 export function StatGrid({ children }) {
-  return <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">{children}</div>
+  return <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">{children}</div>
 }
 
 /** A card with a heading. */
@@ -23,7 +48,7 @@ export function Section({ title, action, children, className = '' }) {
     <section className={`card space-y-4 ${className}`}>
       {(title || action) && (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          {title && <h2 className="text-2xl font-bold">{title}</h2>}
+          {title && <h2 className="text-headline-md">{title}</h2>}
           {action}
         </div>
       )}
@@ -33,12 +58,12 @@ export function Section({ title, action, children, className = '' }) {
 }
 
 export function Empty({ children }) {
-  return <p className="card text-lg text-slate-500">{children}</p>
+  return <p className="card text-body-lg text-on-surface-variant">{children}</p>
 }
 
 export function ErrorNote({ children }) {
   return (
-    <p role="alert" className="card text-lg font-semibold text-red-700">
+    <p role="alert" className="card text-body-lg font-semibold text-error">
       {children}
     </p>
   )

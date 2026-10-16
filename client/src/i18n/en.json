@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "Revive",
-    "logo": "R"
+    "logo": "R",
+    "tagline": "ആരോഗ്യത്തിലേക്ക് തിരികെ"
   },
   "language": {
     "label": "Language",
@@ -22,7 +23,10 @@
     "logout": "Logout",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
-    "reviews": "Review Requests"
+    "reviews": "Review Requests",
+    "emergency": "Emergency 108",
+    "emergencyLabel": "Call emergency ambulance 108",
+    "account": "Signed in as {{name}}"
   },
   "common": {
     "comingSoon": "Coming soon.",

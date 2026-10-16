@@ -8,12 +8,12 @@
     font-size: 18px;
   }
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
+    @apply bg-background text-on-surface antialiased;
   }
   /* Malayalam: its own font first, and taller lines for the stacked vowel signs.
      `lang` is set on <html> by i18n/index.js and on the toggle labels. */
   :lang(ml) {
-    font-family: 'Noto Sans Malayalam', 'Noto Sans', system-ui, sans-serif;
+    font-family: 'Noto Sans Malayalam', 'Plus Jakarta Sans', system-ui, sans-serif;
   }
   html:lang(ml) body {
     line-height: 1.6;
@@ -22,19 +22,51 @@
 }
 
 @layer components {
+  /* Material Symbols Outlined: <span className="icon" aria-hidden="true">call</span> */
+  .icon {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 1.5em;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    white-space: nowrap;
+    direction: ltr;
+    display: inline-block;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'liga';
+    user-select: none;
+  }
+  .icon-fill {
+    font-variation-settings: 'FILL' 1;
+  }
+
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-center text-lg font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/40 disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-4 text-center text-label-lg transition focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 disabled:opacity-50;
   }
   .btn-primary {
-    @apply btn bg-brand-600 text-white hover:bg-brand-700;
+    @apply btn bg-primary text-on-primary shadow-soft hover:bg-primary-container;
   }
   .btn-secondary {
-    @apply btn border-2 border-brand-600 bg-white text-brand-700 hover:bg-brand-50;
+    @apply btn border-2 border-primary bg-surface-container-lowest text-primary hover:bg-surface-container-low;
+  }
+  .btn-tonal {
+    @apply btn bg-surface-container text-primary hover:bg-surface-container-high;
   }
   .input {
-    @apply block w-full rounded-2xl border-2 border-slate-300 bg-white px-4 py-3 text-lg focus:border-brand-600 focus:outline-none focus:ring-4 focus:ring-brand-500/20;
+    @apply block w-full rounded-xl border-2 border-outline-variant bg-surface-container-lowest px-4 py-3 text-body-lg focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/20;
   }
   .card {
-    @apply rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200;
+    @apply rounded-xl bg-surface-container-lowest p-6 shadow-soft ring-1 ring-outline-variant/40;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full bg-surface-container px-4 py-1.5 text-base font-semibold text-on-surface-variant;
+  }
+  .page-title {
+    @apply text-headline-lg sm:text-display;
+  }
+  .page-subtitle {
+    @apply mt-1 text-body-xl text-on-surface-variant;
   }
 }

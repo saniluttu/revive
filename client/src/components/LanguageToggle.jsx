@@ -6,7 +6,7 @@ export default function LanguageToggle() {
   const { t, i18n } = useTranslation()
 
   return (
-    <div role="group" aria-label={t('language.label')} className="flex shrink-0 rounded-xl bg-slate-100 p-1">
+    <div role="group" aria-label={t('language.label')} className="flex shrink-0 rounded-full bg-surface-container-low p-1 ring-1 ring-outline-variant/50">
       {LANGUAGES.map((lng) => {
         const active = i18n.language === lng
         return (
@@ -16,8 +16,8 @@ export default function LanguageToggle() {
             lang={lng}
             aria-pressed={active}
             onClick={() => setLanguage(lng)}
-            className={`whitespace-nowrap rounded-lg px-2.5 py-1.5 text-base font-semibold transition ${
-              active ? 'bg-white text-brand-700 shadow' : 'text-slate-600 hover:text-slate-900'
+            className={`whitespace-nowrap rounded-full px-2 py-1 text-sm font-semibold transition sm:px-3 sm:py-1.5 sm:text-base ${
+              active ? 'bg-primary text-on-primary shadow-soft' : 'text-on-surface-variant hover:text-on-surface'
             }`}
           >
             {t(`language.${lng}`)}

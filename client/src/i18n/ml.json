@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "Revive",
-    "logo": "R"
+    "logo": "R",
+    "tagline": "ആരോഗ്യത്തിലേക്ക് തിരികെ"
   },
   "language": {
     "label": "ഭാഷ",
@@ -22,7 +23,10 @@
     "logout": "ലോഗൗട്ട്",
     "openMenu": "മെനു തുറക്കുക",
     "closeMenu": "മെനു അടയ്ക്കുക",
-    "reviews": "റിവ്യൂ അഭ്യർത്ഥനകൾ"
+    "reviews": "റിവ്യൂ അഭ്യർത്ഥനകൾ",
+    "emergency": "അടിയന്തരം 108",
+    "emergencyLabel": "അടിയന്തര ആംബുലൻസ് 108 വിളിക്കുക",
+    "account": "{{name}} ആയി ലോഗിൻ ചെയ്തു"
   },
   "common": {
     "comingSoon": "ഉടൻ വരുന്നു.",
