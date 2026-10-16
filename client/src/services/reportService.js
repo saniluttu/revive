@@ -143,17 +143,27 @@ export async function analyzeReport(file, { onRetry = () => {} } = {}) {
     }).catch((err) => console.warn('[report] could not save the report', err.code))
   }
   try {
-    sessionStorage.setItem(RESULT_KEY, JSON.stringify(result))
+    sessionStorage.setItem(RESULT_KEY, JSON.stringify({ ...result, patientUid: user?.uid ?? null }))
   } catch {
     // storage blocked: the results page still gets it via navigation state
   }
   return result
 }
 
-export function lastReportResult() {
+/** The last result in this tab, only if it belongs to `uid` (never another user's report). */
+export function lastReportResult(uid) {
   try {
-    return JSON.parse(sessionStorage.getItem(RESULT_KEY)) ?? null
+    const result = JSON.parse(sessionStorage.getItem(RESULT_KEY))
+    return result && uid && result.patientUid === uid ? result : null
   } catch {
     return null
+  }
+}
+
+export function forgetReportResult() {
+  try {
+    sessionStorage.removeItem(RESULT_KEY)
+  } catch {
+    // storage blocked: nothing was kept
   }
 }

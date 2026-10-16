@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import logOutAndReset from '../auth/logOutAndReset.js'
 import useAuth from '../auth/useAuth.js'
 import { homePathFor, logIn, ROLES, signUp } from '../services/authService.js'
 
@@ -28,7 +29,26 @@ export default function Login() {
   const [error, setError] = useState(null) // error code → errors.<code>
   const [busy, setBusy] = useState(false)
 
-  if (user && !busy) return <Navigate to={homePathFor(user)} replace />
+  // Already logged in (e.g. earlier in this tab): never jump straight into that person's
+  // data from the login page, and show nothing about them here — just continue or log out.
+  if (user && !busy) {
+    return (
+      <section className="mx-auto max-w-lg space-y-6">
+        <div className="card space-y-4 text-center">
+          <h1 className="text-3xl font-bold">{t('login.signedInTitle')}</h1>
+          <p className="text-lg text-slate-600">{t('login.signedInText')}</p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <button type="button" className="btn-primary" onClick={() => navigate(homePathFor(user), { replace: true })}>
+              {t('login.continue')}
+            </button>
+            <button type="button" className="btn-secondary" onClick={logOutAndReset}>
+              {t('login.logOutFirst')}
+            </button>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   const isSignup = mode === 'signup'
 

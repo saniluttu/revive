@@ -5,8 +5,11 @@
 // doc is watched live, so a profile change on one device shows on the others.
 
 import {
+  browserLocalPersistence,
+  browserSessionPersistence,
   createUserWithEmailAndPassword,
   onAuthStateChanged as onFirebaseAuthStateChanged,
+  setPersistence,
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth'
@@ -105,6 +108,15 @@ function watchUser(uid) {
   )
 }
 
+// A login lasts for this browser tab only, so a shared laptop never opens on the last
+// person's data. VITE_FIREBASE_REMEMBER_LOGIN=true keeps people logged in on this device.
+const REMEMBER_LOGIN = import.meta.env.VITE_FIREBASE_REMEMBER_LOGIN === 'true'
+const persistenceReady = auth
+  ? setPersistence(auth, REMEMBER_LOGIN ? browserLocalPersistence : browserSessionPersistence).catch((err) =>
+      console.warn('[auth] could not set login persistence', err.code),
+    )
+  : Promise.resolve()
+
 if (auth) {
   onFirebaseAuthStateChanged(auth, (fbUser) => {
     if (!fbUser) {
@@ -150,6 +162,7 @@ export async function signUp({ email, password, role, physio }) {
 
   signingUp = true
   try {
+    await persistenceReady
     const { user: fbUser } = await createUserWithEmailAndPassword(auth, email, password)
     const data = { email, role, profile, createdAt: new Date().toISOString(), inviteCode: null }
     await setDoc(userRef(fbUser.uid), data)
@@ -167,6 +180,7 @@ export async function signUp({ email, password, role, physio }) {
 export async function logIn({ email, password }) {
   requireFirebase()
   try {
+    await persistenceReady
     const { user: fbUser } = await signInWithEmailAndPassword(auth, normaliseEmail(email), password)
     const snap = await getDoc(userRef(fbUser.uid))
     const user = toUser(fbUser.uid, snap.data())

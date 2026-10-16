@@ -63,7 +63,11 @@
     "physioHint": "I review my patients' exercise plans",
     "physioName": "Full name",
     "registrationNumber": "Registration number",
-    "clinic": "Clinic / hospital"
+    "clinic": "Clinic / hospital",
+    "signedInTitle": "Someone is logged in on this device",
+    "signedInText": "Continue to their account, or log out to log in as someone else.",
+    "continue": "Continue",
+    "logOutFirst": "Log out"
   },
   "profile": {
     "setupTitle": "Set up your profile",

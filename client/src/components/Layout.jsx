@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet } from 'react-router-dom'
 import useAuth from '../auth/useAuth.js'
 import { applyProfileLanguage } from '../i18n/index.js'
-import { homePathFor, logOut, ROLES } from '../services/authService.js'
+import logOutAndReset from '../auth/logOutAndReset.js'
+import { homePathFor, ROLES } from '../services/authService.js'
 import LanguageToggle from './LanguageToggle.jsx'
 
 const NAV_BY_ROLE = {
@@ -52,10 +53,17 @@ function MenuIcon({ open }) {
   )
 }
 
+function LogoutIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10" />
+    </svg>
+  )
+}
+
 export default function Layout() {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
-  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
 
   const profileLanguage = user?.profile?.language
@@ -64,10 +72,9 @@ export default function Layout() {
   const items = user ? (NAV_BY_ROLE[user.role] ?? []) : LOGGED_OUT_NAV
   const bp = (BREAKPOINT[i18n.language] ?? BREAKPOINT.en)[items.length > 3 ? 'long' : 'short']
 
-  async function handleLogout() {
+  function handleLogout() {
     setOpen(false)
-    await logOut()
-    navigate('/login', { replace: true })
+    logOutAndReset()
   }
 
   const renderItems = (size, onClick) => (
@@ -77,11 +84,6 @@ export default function Layout() {
           {t(n.label)}
         </NavLink>
       ))}
-      {user && (
-        <button type="button" onClick={handleLogout} className={`${itemBase} ${size} text-left text-red-700 hover:bg-red-50`}>
-          {t('nav.logout')}
-        </button>
-      )}
     </>
   )
 
@@ -100,6 +102,18 @@ export default function Layout() {
             <nav className={`${bp.desktop} items-center gap-0.5`}>{renderItems(itemDesktop)}</nav>
 
             <LanguageToggle />
+
+            {/* Always visible (not inside the menu), so it's easy to hand the device over */}
+            {user && (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border-2 border-red-200 px-3 py-1.5 text-base font-semibold text-red-700 transition hover:bg-red-50"
+              >
+                <LogoutIcon />
+                {t('nav.logout')}
+              </button>
+            )}
 
             <button
               type="button"

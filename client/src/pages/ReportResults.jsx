@@ -131,7 +131,7 @@ export default function ReportResults() {
   const { user } = useAuth()
   const reviews = useReviews()
   const location = useLocation()
-  const result = location.state?.analysis ? location.state : lastReportResult()
+  const result = location.state?.analysis ? location.state : lastReportResult(user.uid)
   if (!result?.analysis) return <Navigate to="/report" replace />
 
   const { analysis: a, provider, cached } = result

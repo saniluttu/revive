@@ -108,8 +108,12 @@ without a project, set `VITE_FIREBASE_EMULATOR=true` and run the emulators (belo
   cue (rep numbers 1–20, one correction per form rule, well done, rest, set complete, not counted,
   go higher) in Malayalam and English into `client/public/audio/{ml,en}/` + `manifest.json`, from the
   text in `en.json` / `ml.json`; re-run it after changing that text (only changed cues are redone,
-  `--force` redoes all). The session plays the pack from memory (no API calls), in the UI language,
-  with a 3 s cooldown per cue; a cue missing from the pack is spoken by `speechSynthesis`.
+  `--force` redoes all). Commit `client/public/audio` afterwards, and restart `npm run dev` (Vite
+  only serves public files that existed when it started). The session plays the pack from memory,
+  in the UI language, with a 3 s cooldown per cue. A cue missing from the pack is fetched once from
+  Sarvam (`/api/tts`) when the page opens and cached in IndexedDB; only English ever falls back to
+  the browser's `speechSynthesis` (Windows has no Malayalam voice). The console logs where every cue
+  played from (`[voice] ▶ ml/rep-3 ← pack file …`).
 - **Read-aloud instructions:** the pack also holds each exercise's intro (name + setup), steps
   and key tip. The exercise cards and Live Session have *Listen to instructions* / Pause / Stop,
   highlighting the step being read (`useInstructions` exposes `step` for the 3D avatar to follow).
@@ -125,7 +129,9 @@ without a project, set `VITE_FIREBASE_EMULATOR=true` and run the emulators (belo
   per-device UI choices (language, read-aloud). `authService`, `reviewService`, `reportService`,
   `sessionService` and `linkService` (`client/src/services/`) are the only modules that talk to
   Firebase; pages use live `onSnapshot` data, so caregiver and physiotherapist screens update on
-  other devices. Collections: `users`, `inviteCodes`, `links`, `reports`, `plans`, `sessions`,
+  other devices. A login lasts for the browser tab (`VITE_FIREBASE_REMEMBER_LOGIN=true` to stay
+  logged in); the login page never shows a logged-in person's data, and Logout reloads the app so
+  nothing of the previous user stays in memory. Collections: `users`, `inviteCodes`, `links`, `reports`, `plans`, `sessions`,
   `reviews` — who may read/write what is in `firestore.rules` (header comment).
 - **Firebase setup:** in the Firebase console enable **Authentication → Email/Password** and
   create a **Firestore** database, then paste `firestore.rules` into **Firestore → Rules** and
