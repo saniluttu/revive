@@ -21,9 +21,9 @@ function Patient({ review }) {
   const parts = review.report.affected_body_parts ?? []
   return (
     <div className="min-w-0 space-y-1">
-      <div className="text-2xl font-bold">
+      <div className="text-headline-md">
         {review.patient.name}
-        {review.patient.age != null && <span className="ml-2 text-lg font-semibold text-slate-500">{t('reviews.age', { age: review.patient.age })}</span>}
+        {review.patient.age != null && <span className="ml-2 text-body-lg font-semibold text-on-surface-variant">{t('reviews.age', { age: review.patient.age })}</span>}
       </div>
       {parts.length > 0 && (
         <div className="flex flex-wrap gap-2">
@@ -34,7 +34,7 @@ function Patient({ review }) {
           ))}
         </div>
       )}
-      <div className="text-lg text-slate-700">{review.report.diagnosis}</div>
+      <div className="text-body-lg text-on-surface-variant">{review.report.diagnosis}</div>
     </div>
   )
 }
@@ -63,11 +63,11 @@ function PendingRow({ review, now }) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <Patient review={review} />
         <div className="shrink-0 text-left sm:text-right">
-          <div className="text-lg font-bold text-amber-700">{waitingFor(t, review.createdAt, now)}</div>
-          <div className="text-base text-slate-500">{t('reviews.requested', { date: formatDate(review.createdAt, i18n.language) })}</div>
+          <div className="text-body-lg font-bold text-amber-700">{waitingFor(t, review.createdAt, now)}</div>
+          <div className="text-base text-on-surface-variant">{t('reviews.requested', { date: formatDate(review.createdAt, i18n.language) })}</div>
         </div>
       </div>
-      <div className="text-base text-slate-600">
+      <div className="text-base text-on-surface-variant">
         {t('reviews.aiPlanShort', { count: review.aiPlan.length, list: review.aiPlan.map((p) => t(`exercises.${p.exerciseId}.name`, { defaultValue: p.exerciseId })).join(', ') })}
       </div>
       <div className="flex flex-wrap items-center gap-3">
@@ -89,7 +89,7 @@ function PendingRow({ review, now }) {
           </button>
         )}
       </div>
-      {error && <p className="text-lg font-semibold text-red-700">{t(`review.errors.${error}`, { defaultValue: t('errors.unknown') })}</p>}
+      {error && <p className="text-body-lg font-semibold text-error">{t(`review.errors.${error}`, { defaultValue: t('errors.unknown') })}</p>}
     </li>
   )
 }
@@ -98,11 +98,11 @@ function ReviewedRow({ review }) {
   const { t, i18n } = useTranslation()
   return (
     <li>
-      <Link to={`/reviews/${review.id}`} className="card flex flex-col gap-3 transition hover:ring-brand-500 sm:flex-row sm:items-center sm:justify-between">
+      <Link to={`/reviews/${review.id}`} className="card flex flex-col gap-3 transition hover:ring-primary sm:flex-row sm:items-center sm:justify-between">
         <Patient review={review} />
         <div className="flex shrink-0 flex-col gap-1 sm:items-end">
           <span className={`w-fit rounded-full px-3 py-1 text-base font-semibold ${STATUS_BADGE[review.status]}`}>{t(`review.status.${review.status}`)}</span>
-          <span className="text-base text-slate-500">{formatDate(review.reviewedAt, i18n.language)}</span>
+          <span className="text-base text-on-surface-variant">{formatDate(review.reviewedAt, i18n.language)}</span>
         </div>
       </Link>
     </li>
@@ -126,8 +126,8 @@ export default function ReviewRequests() {
   return (
     <section className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold sm:text-4xl">{t('reviews.title')}</h1>
-        <p className="mt-1 text-xl text-slate-600">{t('reviews.subtitle')}</p>
+        <h1 className="page-title">{t('reviews.title')}</h1>
+        <p className="page-subtitle">{t('reviews.subtitle')}</p>
       </div>
 
       <StatGrid>
@@ -136,7 +136,7 @@ export default function ReviewRequests() {
         <StatCard label={t('reviews.statPatients')} value={patients} />
       </StatGrid>
 
-      <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1 sm:max-w-md" role="tablist">
+      <div className="grid grid-cols-2 gap-2 rounded-full bg-surface-container p-1 sm:max-w-md" role="tablist">
         {[
           ['pending', t('reviews.pending', { count: pending.length })],
           ['history', t('reviews.reviewed')],
@@ -147,7 +147,7 @@ export default function ReviewRequests() {
             role="tab"
             aria-selected={tab === value}
             onClick={() => setTab(value)}
-            className={`rounded-xl py-3 text-lg font-semibold transition ${tab === value ? 'bg-white text-brand-700 shadow' : 'text-slate-600 hover:text-slate-900'}`}
+            className={`rounded-full py-3 text-body-lg font-semibold transition ${tab === value ? 'bg-surface-container-lowest text-primary shadow-soft' : 'text-on-surface-variant hover:text-on-surface'}`}
           >
             {label}
           </button>

@@ -4,8 +4,8 @@ import { REVIEW_STATUS } from '../services/reviewService.js'
 
 export const STATUS_BADGE = {
   [REVIEW_STATUS.PENDING]: 'bg-amber-100 text-amber-900',
-  [REVIEW_STATUS.APPROVED]: 'bg-brand-100 text-brand-800',
-  [REVIEW_STATUS.REJECTED]: 'bg-red-100 text-red-800',
+  [REVIEW_STATUS.APPROVED]: 'bg-primary-fixed/50 text-primary',
+  [REVIEW_STATUS.REJECTED]: 'bg-red-100 text-error',
 }
 
 export function formatDate(iso, lng) {

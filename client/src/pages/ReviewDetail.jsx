@@ -11,7 +11,7 @@ import { approveReview, getReview, rejectReview, REVIEW_STATUS } from '../servic
 function Section({ title, children }) {
   return (
     <div className="card space-y-3">
-      <h2 className="text-2xl font-bold">{title}</h2>
+      <h2 className="text-headline-md">{title}</h2>
       {children}
     </div>
   )
@@ -19,16 +19,16 @@ function Section({ title, children }) {
 
 function PlanTable({ exercises }) {
   const { t } = useTranslation()
-  if (!exercises.length) return <p className="text-lg text-slate-500">{t('reviews.noExercises')}</p>
+  if (!exercises.length) return <p className="text-body-lg text-on-surface-variant">{t('reviews.noExercises')}</p>
   return (
-    <ul className="divide-y divide-slate-200 rounded-2xl ring-1 ring-slate-200">
+    <ul className="divide-y divide-outline-variant/40 rounded-xl ring-1 ring-outline-variant/40">
       {exercises.map((e) => (
-        <li key={e.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-lg">
+        <li key={e.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-body-lg">
           <span className="flex flex-wrap items-center gap-3">
             <ExerciseImages id={e.id} size="sm" />
             <span className="font-semibold">{t(`exercises.${e.id}.name`)}</span>
           </span>
-          <span className="text-slate-600">{t('review.repsSets', { reps: e.reps, sets: e.sets })}</span>
+          <span className="text-on-surface-variant">{t('review.repsSets', { reps: e.reps, sets: e.sets })}</span>
         </li>
       ))}
     </ul>
@@ -38,7 +38,7 @@ function PlanTable({ exercises }) {
 function NumberField({ label, value, min, max, onChange }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-base font-semibold text-slate-600">{label}</span>
+      <span className="mb-1 block text-base font-semibold text-on-surface-variant">{label}</span>
       <input
         type="number"
         inputMode="numeric"
@@ -63,10 +63,10 @@ function PlanEditor({ plan, onChange }) {
   return (
     <div className="space-y-3">
       {plan.map((p, i) => (
-        <div key={i} className="flex flex-wrap items-end gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+        <div key={i} className="flex flex-wrap items-end gap-3 rounded-xl bg-surface-container-low p-4 ring-1 ring-outline-variant/40">
           <ExerciseImages id={p.exerciseId} size="sm" />
           <label className="block min-w-0 flex-1 basis-56">
-            <span className="mb-1 block text-base font-semibold text-slate-600">{t('reviews.exercise')}</span>
+            <span className="mb-1 block text-base font-semibold text-on-surface-variant">{t('reviews.exercise')}</span>
             <select
               className="input"
               value={p.exerciseId}
@@ -86,7 +86,7 @@ function PlanEditor({ plan, onChange }) {
           <NumberField label={t('reviews.sets')} value={p.sets} min={1} max={10} onChange={(sets) => update(i, { sets })} />
           <button
             type="button"
-            className="rounded-xl px-3 py-3 text-lg font-semibold text-red-700 hover:bg-red-50"
+            className="rounded-xl px-3 py-3 text-body-lg font-semibold text-error hover:bg-red-50"
             onClick={() => onChange(plan.filter((_, j) => j !== i))}
           >
             {t('reviews.remove')}
@@ -111,7 +111,7 @@ function Outcome({ review }) {
   const approved = review.status === REVIEW_STATUS.APPROVED
   return (
     <Section title={t('reviews.outcome')}>
-      <p className="text-lg text-slate-700">
+      <p className="text-body-lg text-on-surface-variant">
         {t('reviews.reviewedBy', {
           name: doctorName(t, review.reviewer?.name),
           date: formatDate(review.reviewedAt, i18n.language),
@@ -120,10 +120,10 @@ function Outcome({ review }) {
       {approved ? (
         <>
           <PlanTable exercises={planExercises(review.plan)} />
-          {review.notes && <p className="whitespace-pre-line rounded-2xl bg-brand-50 p-4 text-lg">{review.notes}</p>}
+          {review.notes && <p className="whitespace-pre-line rounded-xl bg-surface-container-low p-4 text-body-lg">{review.notes}</p>}
         </>
       ) : (
-        <p className="whitespace-pre-line rounded-2xl bg-red-50 p-4 text-lg text-red-900">
+        <p className="whitespace-pre-line rounded-xl bg-red-50 p-4 text-body-lg text-red-900">
           <strong>{t('review.reason')}:</strong> {review.rejectReason}
         </p>
       )}
@@ -137,7 +137,7 @@ export default function ReviewDetail() {
   const { id } = useParams()
   const review = getReview(id, useReviews())
   const loaded = useReviewsLoaded()
-  if (!loaded) return <p className="card text-lg text-slate-500">{t('common.pleaseWait')}</p>
+  if (!loaded) return <p className="card text-body-lg text-on-surface-variant">{t('common.pleaseWait')}</p>
   if (!review) return <Navigate to="/reviews" replace />
   return <ReviewEditor key={review.id} review={review} />
 }
@@ -179,43 +179,43 @@ function ReviewEditor({ review }) {
 
   return (
     <section className="space-y-6">
-      <Link to="/reviews" className="inline-block text-lg font-semibold text-brand-700 underline">
+      <Link to="/reviews" className="inline-block text-body-lg font-semibold text-primary underline">
         ← {t('reviews.back')}
       </Link>
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-3xl font-bold sm:text-4xl">{review.patient.name}</h1>
-          <p className="mt-1 text-xl text-slate-600">
+          <h1 className="page-title">{review.patient.name}</h1>
+          <p className="page-subtitle">
             {review.patient.age != null && `${t('reviews.age', { age: review.patient.age })} · `}
             {t('reviews.requested', { date: formatDate(review.createdAt, i18n.language) })}
           </p>
         </div>
-        <span className={`rounded-full px-4 py-1.5 text-lg font-bold ${STATUS_BADGE[review.status]}`}>
+        <span className={`rounded-full px-4 py-1.5 text-body-lg font-bold ${STATUS_BADGE[review.status]}`}>
           {t(`review.status.${review.status}`)}
         </span>
       </div>
 
       <Section title={t('reviews.reportSummary')}>
-        {r.fileName && <p className="break-all text-base text-slate-500">{r.fileName}</p>}
-        <p className="text-lg">
+        {r.fileName && <p className="break-all text-base text-on-surface-variant">{r.fileName}</p>}
+        <p className="text-body-lg">
           <strong>{t('report.diagnosis')}:</strong> {r.diagnosis}{' '}
-          <span className="ml-1 whitespace-nowrap rounded-full bg-slate-100 px-3 py-0.5 text-base font-semibold">
+          <span className="ml-1 whitespace-nowrap rounded-full bg-surface-container px-3 py-0.5 text-base font-semibold">
             {t(`report.severity.${r.severity}`, { defaultValue: t('report.severity.unknown') })}
           </span>
         </p>
-        <p className="text-xl leading-relaxed">{ml ? r.summary_ml : r.summary_en}</p>
+        <p className="text-body-xl leading-relaxed">{ml ? r.summary_ml : r.summary_en}</p>
         {r.affected_body_parts.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {r.affected_body_parts.map((p) => (
-              <span key={p} className="rounded-full bg-brand-100 px-3 py-1 text-base font-semibold text-brand-800">
+              <span key={p} className="rounded-full bg-primary-fixed/50 px-3 py-1 text-base font-semibold text-primary">
                 {t(`bodyParts.${p}.name`)}
               </span>
             ))}
           </div>
         )}
         {cautions.length > 0 && (
-          <ul className="space-y-1 text-lg">
+          <ul className="space-y-1 text-body-lg">
             {cautions.map((c, i) => (
               <li key={i} className="flex gap-3">
                 <span aria-hidden className="font-bold text-red-600">
@@ -237,7 +237,7 @@ function ReviewEditor({ review }) {
       {pending && mode !== 'reject' && (
         <div className="card space-y-4">
           <label className="block">
-            <span className="mb-1 block text-lg font-semibold">{t('reviews.notes')}</span>
+            <span className="mb-1 block text-body-lg font-semibold">{t('reviews.notes')}</span>
             <textarea
               className="input min-h-28"
               value={notes}
@@ -246,7 +246,7 @@ function ReviewEditor({ review }) {
             />
           </label>
           {error && (
-            <p role="alert" className="rounded-2xl bg-red-50 p-4 text-lg font-semibold text-red-700">
+            <p role="alert" className="rounded-xl bg-red-50 p-4 text-body-lg font-semibold text-error">
               {t(`review.errors.${error}`, { defaultValue: t('errors.unknown') })}
             </p>
           )}
@@ -278,7 +278,7 @@ function ReviewEditor({ review }) {
               </button>
               <button
                 type="button"
-                className="btn flex-1 border-2 border-red-600 bg-white text-red-700 hover:bg-red-50"
+                className="btn flex-1 border-2 border-red-600 bg-surface-container-lowest text-error hover:bg-red-50"
                 onClick={() => {
                   setMode('reject')
                   setError(null)
@@ -295,7 +295,7 @@ function ReviewEditor({ review }) {
       {pending && mode === 'reject' && (
         <form onSubmit={reject} className="card space-y-4 ring-2 ring-red-300">
           <label className="block">
-            <span className="mb-1 block text-lg font-semibold">{t('reviews.rejectReason')}</span>
+            <span className="mb-1 block text-body-lg font-semibold">{t('reviews.rejectReason')}</span>
             <textarea
               className="input min-h-28"
               value={reason}
@@ -305,7 +305,7 @@ function ReviewEditor({ review }) {
             />
           </label>
           {error && (
-            <p role="alert" className="rounded-2xl bg-red-50 p-4 text-lg font-semibold text-red-700">
+            <p role="alert" className="rounded-xl bg-red-50 p-4 text-body-lg font-semibold text-error">
               {t(`review.errors.${error}`, { defaultValue: t('errors.unknown') })}
             </p>
           )}

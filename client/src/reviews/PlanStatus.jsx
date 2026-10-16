@@ -5,8 +5,8 @@ import { doctorName, planExercises, planSessionUrl } from './plan.js'
 
 const STATUS_STYLE = {
   [REVIEW_STATUS.PENDING]: { box: 'bg-amber-50 ring-amber-200', badge: 'bg-amber-100 text-amber-900' },
-  [REVIEW_STATUS.APPROVED]: { box: 'bg-brand-50 ring-brand-100', badge: 'bg-brand-600 text-white' },
-  [REVIEW_STATUS.REJECTED]: { box: 'bg-red-50 ring-red-200', badge: 'bg-red-100 text-red-800' },
+  [REVIEW_STATUS.APPROVED]: { box: 'bg-surface-container-low ring-primary-fixed', badge: 'bg-primary text-white' },
+  [REVIEW_STATUS.REJECTED]: { box: 'bg-red-50 ring-red-200', badge: 'bg-red-100 text-error' },
 }
 
 function LockIcon() {
@@ -30,28 +30,28 @@ export function PlanExerciseList({ exercises, reviewId, locked }) {
         const body = (
           <>
             <span className="min-w-0">
-              <span className="block text-xl font-bold">{t(`exercises.${e.id}.name`)}</span>
-              <span className="block text-lg text-slate-600">{t('review.repsSets', { reps: e.reps, sets: e.sets })}</span>
+              <span className="block text-label-lg">{t(`exercises.${e.id}.name`)}</span>
+              <span className="block text-body-lg text-on-surface-variant">{t('review.repsSets', { reps: e.reps, sets: e.sets })}</span>
             </span>
             {locked ? (
-              <span className="flex items-center gap-1 text-base font-semibold text-slate-500">
+              <span className="flex items-center gap-1 text-base font-semibold text-on-surface-variant">
                 <LockIcon />
                 {t('review.locked')}
               </span>
             ) : (
-              <span className="whitespace-nowrap text-lg font-semibold text-brand-700">{t('review.start')} →</span>
+              <span className="whitespace-nowrap text-body-lg font-semibold text-primary">{t('review.start')} →</span>
             )}
           </>
         )
-        const base = 'flex items-center justify-between gap-3 rounded-2xl bg-white p-4 ring-1'
+        const base = 'flex items-center justify-between gap-3 rounded-xl bg-surface-container-lowest p-4 ring-1'
         return (
           <li key={e.id}>
             {locked ? (
-              <div className={`${base} opacity-75 ring-slate-200`} aria-disabled>
+              <div className={`${base} opacity-75 ring-outline-variant/40`} aria-disabled>
                 {body}
               </div>
             ) : (
-              <Link to={planSessionUrl(reviewId, e.id)} className={`${base} ring-brand-600 transition hover:bg-brand-50`}>
+              <Link to={planSessionUrl(reviewId, e.id)} className={`${base} ring-primary transition hover:bg-surface-container-low`}>
                 {body}
               </Link>
             )}
@@ -72,22 +72,22 @@ export default function PlanStatus({ review, showExercises = true }) {
   const dr = review.reviewer && doctorName(t, review.reviewer.name)
 
   return (
-    <div className={`space-y-4 rounded-3xl p-5 ring-1 sm:p-6 ${style.box}`}>
+    <div className={`space-y-4 rounded-xl p-5 ring-1 sm:p-6 ${style.box}`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-2xl font-bold">{t('review.planTitle')}</h2>
-        <span className={`rounded-full px-4 py-1.5 text-lg font-bold ${style.badge}`}>
+        <h2 className="text-headline-md">{t('review.planTitle')}</h2>
+        <span className={`rounded-full px-4 py-1.5 text-body-lg font-bold ${style.badge}`}>
           {approved ? t('review.approvedBy', { name: dr }) : t(`review.status.${review.status}`)}
         </span>
       </div>
 
-      {review.status === REVIEW_STATUS.PENDING && <p className="text-lg text-amber-950">{t('review.pendingText')}</p>}
+      {review.status === REVIEW_STATUS.PENDING && <p className="text-body-lg text-amber-950">{t('review.pendingText')}</p>}
 
       {approved && (
         <>
-          {review.reviewer?.clinic && <p className="text-lg text-slate-700">{review.reviewer.clinic}</p>}
+          {review.reviewer?.clinic && <p className="text-body-lg text-on-surface-variant">{review.reviewer.clinic}</p>}
           {review.notes && (
-            <blockquote className="rounded-2xl bg-white p-4 text-lg ring-1 ring-brand-100">
-              <span className="block text-base font-semibold text-brand-800">{t('review.notesFrom', { name: dr })}</span>
+            <blockquote className="rounded-xl bg-surface-container-lowest p-4 text-body-lg ring-1 ring-primary-fixed">
+              <span className="block text-base font-semibold text-primary">{t('review.notesFrom', { name: dr })}</span>
               <span className="whitespace-pre-line">{review.notes}</span>
             </blockquote>
           )}
@@ -96,9 +96,9 @@ export default function PlanStatus({ review, showExercises = true }) {
 
       {rejected && (
         <div className="space-y-3">
-          <p className="text-lg text-red-900">{t('review.rejectedText', { name: dr })}</p>
-          <blockquote className="whitespace-pre-line rounded-2xl bg-white p-4 text-lg ring-1 ring-red-200">
-            <span className="block text-base font-semibold text-red-800">{t('review.reason')}</span>
+          <p className="text-body-lg text-red-900">{t('review.rejectedText', { name: dr })}</p>
+          <blockquote className="whitespace-pre-line rounded-xl bg-surface-container-lowest p-4 text-body-lg ring-1 ring-red-200">
+            <span className="block text-base font-semibold text-error">{t('review.reason')}</span>
             {review.rejectReason}
           </blockquote>
           <div className="flex flex-col gap-3 sm:flex-row">
