@@ -116,28 +116,48 @@ async function playBlob(blob) {
   }
 }
 
-/** Speaks `text` with Sarvam, or the browser's voice if that fails. Resolves when done or stopped. */
+/**
+ * Sarvam text-to-speech through the server.
+ * @returns {Promise<{ bytes: ArrayBuffer, type: string }>} throws if the server or Sarvam fails
+ */
+export async function fetchTts(text, lang) {
+  const res = await post('/api/tts', {
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, lang: SPEECH_LANG[lang] ?? 'en-IN' }),
+  })
+  if (!res.ok) throw new Error(`/api/tts HTTP ${res.status}${res.status === 503 ? ' (is SARVAM_API_KEY set in server/.env?)' : ''}`)
+  return { bytes: await res.arrayBuffer(), type: res.headers.get('content-type') || 'audio/mpeg' }
+}
+
+/**
+ * Speaks `text` with Sarvam. If that fails, English falls back to the browser's
+ * voice; Malayalam does not (most systems have no Malayalam voice and would play
+ * silence) — the reply stays on screen. Resolves when done or stopped.
+ */
 export async function speak(text, lang) {
   stopSpeaking()
   const myRun = speakRun
-  let blob = null
+  let audio = null
+  let failure = null
   try {
-    const res = await post('/api/tts', {
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, lang: SPEECH_LANG[lang] ?? 'en-IN' }),
-    })
-    if (res.ok) blob = await res.blob()
-  } catch {
-    // fall through to the browser's voice
+    audio = await fetchTts(text, lang)
+  } catch (err) {
+    failure = err.message
   }
   if (myRun !== speakRun) return
-  if (blob) {
+  if (audio) {
     try {
-      return await playBlob(blob)
-    } catch {
-      // e.g. autoplay blocked — try the browser's voice
+      console.info(`[voice] reply (${lang}) ← Sarvam /api/tts`)
+      return await playBlob(new Blob([audio.bytes], { type: audio.type }))
+    } catch (err) {
+      failure = `playback failed: ${err.message}`
     }
   }
+  if (lang === 'ml') {
+    console.warn(`[voice] reply (ml) not spoken — ${failure}. No browser fallback for Malayalam.`)
+    return
+  }
+  console.info(`[voice] reply (en) ← browser speechSynthesis (${failure})`)
   return speakWithBrowser(text, lang)
 }
 

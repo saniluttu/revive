@@ -65,12 +65,14 @@ const manifest = {
 let made = 0
 let kept = 0
 let failed = 0
+const perLang = {}
 
 for (const lang of CUE_LANGS) {
   const dict = await readJson(path.join(CLIENT, 'src', 'i18n', `${lang}.json`))
   const texts = cueTexts(dict)
   await mkdir(path.join(OUT_DIR, lang), { recursive: true })
   manifest.cues[lang] = {}
+  console.log(`${lang}: ${Object.keys(texts).length} cues`)
 
   for (const [id, text] of Object.entries(texts)) {
     const file = `${lang}/${id}.mp3`
@@ -94,5 +96,8 @@ for (const lang of CUE_LANGS) {
 }
 
 await writeFile(MANIFEST, `${JSON.stringify(manifest, null, 2)}\n`)
+for (const lang of CUE_LANGS) perLang[lang] = Object.keys(manifest.cues[lang]).length
 console.log(`Voice cues: ${made} generated, ${kept} unchanged, ${failed} failed → ${path.relative(process.cwd(), MANIFEST)}`)
+console.log(`In the pack: ${CUE_LANGS.map((l) => `${l} ${perLang[l]}`).join(', ')}`)
+if (!failed) console.log('Commit client/public/audio so every machine has the cues without a Sarvam key.')
 if (failed) process.exit(1)

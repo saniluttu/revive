@@ -2,14 +2,19 @@
 // public/audio (see server/scripts/generate-voice-cues.js). No API calls: files
 // are fetched and decoded when the session page opens, then played instantly
 // with Web Audio. A cue missing from the pack — or whose text has changed since
-// it was generated — is spoken by the browser's speechSynthesis instead.
+// it was generated — is fetched once from Sarvam (/api/tts) and cached in
+// IndexedDB; only English ever falls back to the browser's speechSynthesis
+// (see cueSource.js). The console says where each cue played from.
 //
 // Also reads an exercise's instructions aloud step by step (playInstructions),
 // reporting the current step so the page can highlight it (and, later, the 3D
 // avatar can follow along). Session cues stay quiet while instructions play.
 
 import i18n from '../i18n/index.js'
+import { fetchTts } from '../services/voiceService.js'
+import { getCachedAudio, putCachedAudio } from './audioCache.js'
 import { COOLDOWN_MS, cueTexts, instructionCues } from './cues.js'
+import { limitConcurrency, resolveCueAudio } from './cueSource.js'
 
 const SPEECH_LANG = { en: 'en-IN', ml: 'ml-IN' }
 
@@ -59,13 +64,13 @@ export function createCueQueue({ output, now = () => performance.now(), cooldown
   return { say, stop, isPlaying: () => playing }
 }
 
-// ---------- browser output: Web Audio for the pack, speechSynthesis as fallback ----------
+// ---------- browser output: Web Audio (pack → cache → Sarvam), speechSynthesis for English only ----------
 
 const AUDIO_BASE = `${import.meta.env?.BASE_URL ?? '/'}audio/`
 
 let context = null
 let manifestPromise = null
-const buffers = new Map() // `${lang}:${id}` → Promise<AudioBuffer | null>
+const buffers = new Map() // `${lang}:${id}` → Promise<{ buffer?, speak?, source, error? }>
 const textCache = new Map() // lang → { id: text }
 let current = null // { stop(), pause(), resume() } for what is playing now
 
@@ -83,8 +88,14 @@ function textsFor(lang) {
 
 function loadManifest() {
   manifestPromise ??= fetch(`${AUDIO_BASE}manifest.json`)
-    .then((res) => (res.ok ? res.json() : { cues: {} }))
+    .then((res) => (res.ok && res.headers.get('content-type')?.includes('json') ? res.json() : { cues: {} }))
     .catch(() => ({ cues: {} }))
+    .then((manifest) => {
+      const counts = Object.entries(manifest.cues ?? {}).map(([lang, cues]) => `${lang} ${Object.keys(cues).length}`)
+      if (counts.length) console.info(`[voice] cue pack found: ${counts.join(', ')}`)
+      else console.warn('[voice] no cue pack (public/audio/manifest.json) — cues come from Sarvam /api/tts and are cached')
+      return manifest
+    })
   return manifestPromise
 }
 
@@ -94,20 +105,37 @@ async function packEntry(id, lang) {
   return entry && entry.text === textsFor(lang)[id] ? entry : null
 }
 
-function loadBuffer(id, lang) {
+const tts = limitConcurrency(fetchTts, 2) // preloading a whole language mustn't flood Sarvam
+
+async function packFile(id, lang) {
+  const entry = await packEntry(id, lang)
+  if (!entry) return null
+  const path = `${AUDIO_BASE}${entry.file}`
+  const res = await fetch(path)
+  // A missing file can come back as the app's index.html with 200 (SPA fallback): not audio
+  if (!res.ok || !res.headers.get('content-type')?.startsWith('audio/')) {
+    console.warn(`[voice] pack file ${path} is listed in the manifest but missing — using Sarvam instead`)
+    return null
+  }
+  return { bytes: await res.arrayBuffer(), path }
+}
+
+/** Decoded audio for a cue, from the first source that has it. Failures aren't remembered. */
+function loadCue(id, lang) {
   const key = `${lang}:${id}`
   if (!buffers.has(key)) {
-    buffers.set(
-      key,
-      (async () => {
-        const entry = await packEntry(id, lang)
-        const ctx = audioContext()
-        if (!entry || !ctx) return null
-        const res = await fetch(`${AUDIO_BASE}${entry.file}`)
-        if (!res.ok) return null
-        return ctx.decodeAudioData(await res.arrayBuffer())
-      })().catch(() => null),
-    )
+    const loading = (async () => {
+      const found = await resolveCueAudio(
+        { id, lang, text: textsFor(lang)[id] },
+        { packFile, cacheGet: getCachedAudio, cachePut: putCachedAudio, tts },
+      )
+      if (!found.bytes) return found
+      const ctx = audioContext()
+      if (!ctx) return { source: null, error: 'no Web Audio in this browser' }
+      return { buffer: await ctx.decodeAudioData(found.bytes), source: found.source }
+    })().catch((err) => ({ source: null, error: err.message }))
+    buffers.set(key, loading)
+    loading.then((r) => r.source || buffers.delete(key)) // try again next time
   }
   return buffers.get(key)
 }
@@ -167,8 +195,16 @@ function speakText(text, lang) {
 
 const browserOutput = {
   async play(id, lang) {
-    const buffer = await loadBuffer(id, lang)
-    return buffer ? playBuffer(buffer) : speakText(textsFor(lang)[id], lang)
+    const cue = await loadCue(id, lang)
+    if (cue.buffer) {
+      console.info(`[voice] ▶ ${lang}/${id} ← ${cue.source}`)
+      return playBuffer(cue.buffer)
+    }
+    if (cue.speak) {
+      console.info(`[voice] ▶ ${lang}/${id} ← ${cue.source}`)
+      return speakText(textsFor(lang)[id], lang)
+    }
+    console.warn(`[voice] ✗ ${lang}/${id} — ${cue.error}`)
   },
   stop() {
     current?.stop()
@@ -178,10 +214,21 @@ const browserOutput = {
 
 const queue = createCueQueue({ output: browserOutput })
 
-/** Fetch and decode every cue for a language so playback is instant. */
+/**
+ * Fetch and decode every cue for a language so playback is instant. Cues missing
+ * from the pack are fetched from Sarvam now (and cached), not during the session.
+ */
 export async function preloadCues(lang) {
   const ids = Object.keys(textsFor(lang))
-  await Promise.all(ids.map((id) => loadBuffer(id, lang)))
+  const results = await Promise.all(ids.map((id) => loadCue(id, lang)))
+  const bySource = {}
+  for (const r of results) {
+    const where = r.source ? r.source.replace(/^pack file .*/, 'pack') : 'missing'
+    bySource[where] = (bySource[where] ?? 0) + 1
+  }
+  const summary = Object.entries(bySource).map(([k, n]) => `${n} ${k}`).join(', ')
+  const log = bySource.missing ? console.warn : console.info
+  log(`[voice] ${lang} cues ready: ${summary}${bySource.missing ? ' — run `npm run voice-cues` in server/ to build the pack' : ''}`)
 }
 
 /** Call from a click (e.g. Start camera) so the browser lets audio play. */
