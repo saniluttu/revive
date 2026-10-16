@@ -1,0 +1,418 @@
+{
+  "generatedAt": "2026-10-16T20:26:55.657Z",
+  "model": "bulbul:v3",
+  "cues": {
+    "ml": {
+      "rep-1": {
+        "file": "ml/rep-1.mp3",
+        "text": "ഒന്ന്"
+      },
+      "rep-2": {
+        "file": "ml/rep-2.mp3",
+        "text": "രണ്ട്"
+      },
+      "rep-3": {
+        "file": "ml/rep-3.mp3",
+        "text": "മൂന്ന്"
+      },
+      "rep-4": {
+        "file": "ml/rep-4.mp3",
+        "text": "നാല്"
+      },
+      "rep-5": {
+        "file": "ml/rep-5.mp3",
+        "text": "അഞ്ച്"
+      },
+      "rep-6": {
+        "file": "ml/rep-6.mp3",
+        "text": "ആറ്"
+      },
+      "rep-7": {
+        "file": "ml/rep-7.mp3",
+        "text": "ഏഴ്"
+      },
+      "rep-8": {
+        "file": "ml/rep-8.mp3",
+        "text": "എട്ട്"
+      },
+      "rep-9": {
+        "file": "ml/rep-9.mp3",
+        "text": "ഒൻപത്"
+      },
+      "rep-10": {
+        "file": "ml/rep-10.mp3",
+        "text": "പത്ത്"
+      },
+      "rep-11": {
+        "file": "ml/rep-11.mp3",
+        "text": "പതിനൊന്ന്"
+      },
+      "rep-12": {
+        "file": "ml/rep-12.mp3",
+        "text": "പന്ത്രണ്ട്"
+      },
+      "rep-13": {
+        "file": "ml/rep-13.mp3",
+        "text": "പതിമൂന്ന്"
+      },
+      "rep-14": {
+        "file": "ml/rep-14.mp3",
+        "text": "പതിനാല്"
+      },
+      "rep-15": {
+        "file": "ml/rep-15.mp3",
+        "text": "പതിനഞ്ച്"
+      },
+      "rep-16": {
+        "file": "ml/rep-16.mp3",
+        "text": "പതിനാറ്"
+      },
+      "rep-17": {
+        "file": "ml/rep-17.mp3",
+        "text": "പതിനേഴ്"
+      },
+      "rep-18": {
+        "file": "ml/rep-18.mp3",
+        "text": "പതിനെട്ട്"
+      },
+      "rep-19": {
+        "file": "ml/rep-19.mp3",
+        "text": "പത്തൊൻപത്"
+      },
+      "rep-20": {
+        "file": "ml/rep-20.mp3",
+        "text": "ഇരുപത്"
+      },
+      "wellDone": {
+        "file": "ml/wellDone.mp3",
+        "text": "നന്നായി ചെയ്തു!"
+      },
+      "rest": {
+        "file": "ml/rest.mp3",
+        "text": "ഇനി വിശ്രമിക്കൂ."
+      },
+      "setComplete": {
+        "file": "ml/setComplete.mp3",
+        "text": "സെറ്റ് പൂർത്തിയായി."
+      },
+      "notCounted": {
+        "file": "ml/notCounted.mp3",
+        "text": "ഇത് എണ്ണിയില്ല."
+      },
+      "higher": {
+        "file": "ml/higher.mp3",
+        "text": "കുറച്ചുകൂടി ഉയർത്തുക."
+      },
+      "fix-leanSideways": {
+        "file": "ml/fix-leanSideways.mp3",
+        "text": "നേരെ നിൽക്കുക — ഒരു വശത്തേക്ക് ചായരുത്"
+      },
+      "fix-shrug": {
+        "file": "ml/fix-shrug.mp3",
+        "text": "തോൾ താഴ്ത്തുക — പൊക്കരുത്"
+      },
+      "fix-backArch": {
+        "file": "ml/fix-backArch.mp3",
+        "text": "പുറം വളയ്ക്കരുത് — നേരെ നിൽക്കുക"
+      },
+      "fix-kneesIn": {
+        "file": "ml/fix-kneesIn.mp3",
+        "text": "മുട്ട് ഉള്ളിലേക്ക് പോകരുത് — കാൽവിരലിന് നേരെ വെക്കുക"
+      },
+      "fix-leanForward": {
+        "file": "ml/fix-leanForward.mp3",
+        "text": "നെഞ്ച് നിവർത്തുക — മുന്നോട്ട് കുനിയരുത്"
+      },
+      "fix-leanBack": {
+        "file": "ml/fix-leanBack.mp3",
+        "text": "നേരെ ഇരിക്കുക — പിന്നോട്ട് ചായരുത്"
+      },
+      "ex-shoulder-abduction-intro": {
+        "file": "ml/ex-shoulder-abduction-intro.mp3",
+        "text": "കൈ വശത്തേക്ക് പൊക്കൽ. ക്യാമറയുടെ നേരെ നിൽക്കുക, കൈകൾ താഴ്ത്തി ഇടുക."
+      },
+      "ex-shoulder-abduction-step-1": {
+        "file": "ml/ex-shoulder-abduction-step-1.mp3",
+        "text": "രണ്ട് കൈയും വശത്തേക്ക് തോളിന്റെ ഉയരം വരെ പൊക്കുക"
+      },
+      "ex-shoulder-abduction-step-2": {
+        "file": "ml/ex-shoulder-abduction-step-2.mp3",
+        "text": "കൈമുട്ട് മടക്കരുത്, തോൾ അയച്ചിടുക"
+      },
+      "ex-shoulder-abduction-step-3": {
+        "file": "ml/ex-shoulder-abduction-step-3.mp3",
+        "text": "പതുക്കെ താഴ്ത്തുക"
+      },
+      "ex-shoulder-abduction-tip": {
+        "file": "ml/ex-shoulder-abduction-tip.mp3",
+        "text": "തോളുകൾ അയച്ചുവെക്കുക, ശരീരം നേരെ നിർത്തുക."
+      },
+      "ex-shoulder-flexion-intro": {
+        "file": "ml/ex-shoulder-flexion-intro.mp3",
+        "text": "കൈ മുന്നോട്ട് പൊക്കൽ. ക്യാമറയ്ക്ക് വശം തിരിഞ്ഞ് നിൽക്കുക, കൈകൾ താഴ്ത്തി ഇടുക."
+      },
+      "ex-shoulder-flexion-step-1": {
+        "file": "ml/ex-shoulder-flexion-step-1.mp3",
+        "text": "കൈ മുന്നിലൂടെ മുകളിലേക്ക് പൊക്കുക, തള്ളവിരൽ മുകളിലേക്ക്"
+      },
+      "ex-shoulder-flexion-step-2": {
+        "file": "ml/ex-shoulder-flexion-step-2.mp3",
+        "text": "പുറം നിവർത്തി വെക്കുക — പിന്നോട്ട് ചായരുത്"
+      },
+      "ex-shoulder-flexion-step-3": {
+        "file": "ml/ex-shoulder-flexion-step-3.mp3",
+        "text": "പതുക്കെ താഴ്ത്തുക"
+      },
+      "ex-shoulder-flexion-tip": {
+        "file": "ml/ex-shoulder-flexion-tip.mp3",
+        "text": "പുറം നേരെ വെക്കുക — പിന്നോട്ട് ചായരുത്."
+      },
+      "ex-mini-squat-intro": {
+        "file": "ml/ex-mini-squat-intro.mp3",
+        "text": "മുട്ട് ചെറുതായി മടക്കൽ. ക്യാമറയുടെ നേരെ നിൽക്കുക, കാലുകൾ അല്പം അകത്തി വെക്കുക. വേണമെങ്കിൽ കസേരയിൽ പിടിക്കാം."
+      },
+      "ex-mini-squat-step-1": {
+        "file": "ml/ex-mini-squat-step-1.mp3",
+        "text": "ഇരിക്കാൻ പോകുന്നത് പോലെ മുട്ട് അല്പം മടക്കുക"
+      },
+      "ex-mini-squat-step-2": {
+        "file": "ml/ex-mini-squat-step-2.mp3",
+        "text": "മുട്ട് കാൽവിരലിന് നേരെ വെക്കുക, നെഞ്ച് നിവർത്തുക"
+      },
+      "ex-mini-squat-step-3": {
+        "file": "ml/ex-mini-squat-step-3.mp3",
+        "text": "പതുക്കെ നിവർന്ന് നിൽക്കുക"
+      },
+      "ex-mini-squat-tip": {
+        "file": "ml/ex-mini-squat-tip.mp3",
+        "text": "മുട്ട് കാൽവിരലിന് നേരെ വെക്കുക, നെഞ്ച് നിവർത്തുക."
+      },
+      "ex-seated-knee-extension-intro": {
+        "file": "ml/ex-seated-knee-extension-intro.mp3",
+        "text": "ഇരുന്ന് കാൽ നിവർത്തൽ. ക്യാമറയ്ക്ക് വശം തിരിഞ്ഞ് കസേരയിൽ ഇരിക്കുക, കാൽ നിലത്ത് വെക്കുക."
+      },
+      "ex-seated-knee-extension-step-1": {
+        "file": "ml/ex-seated-knee-extension-step-1.mp3",
+        "text": "ഒരു കാൽ മുന്നോട്ട് പൊക്കി മുട്ട് നിവർത്തുക"
+      },
+      "ex-seated-knee-extension-step-2": {
+        "file": "ml/ex-seated-knee-extension-step-2.mp3",
+        "text": "പുറം കസേരയിൽ ചാരി ഒരു നിമിഷം അങ്ങനെ വെക്കുക"
+      },
+      "ex-seated-knee-extension-step-3": {
+        "file": "ml/ex-seated-knee-extension-step-3.mp3",
+        "text": "പതുക്കെ കാൽ താഴ്ത്തുക"
+      },
+      "ex-seated-knee-extension-tip": {
+        "file": "ml/ex-seated-knee-extension-tip.mp3",
+        "text": "കസേരയിൽ പുറം ചാരി നിവർന്ന് ഇരിക്കുക."
+      }
+    },
+    "en": {
+      "rep-1": {
+        "file": "en/rep-1.mp3",
+        "text": "One"
+      },
+      "rep-2": {
+        "file": "en/rep-2.mp3",
+        "text": "Two"
+      },
+      "rep-3": {
+        "file": "en/rep-3.mp3",
+        "text": "Three"
+      },
+      "rep-4": {
+        "file": "en/rep-4.mp3",
+        "text": "Four"
+      },
+      "rep-5": {
+        "file": "en/rep-5.mp3",
+        "text": "Five"
+      },
+      "rep-6": {
+        "file": "en/rep-6.mp3",
+        "text": "Six"
+      },
+      "rep-7": {
+        "file": "en/rep-7.mp3",
+        "text": "Seven"
+      },
+      "rep-8": {
+        "file": "en/rep-8.mp3",
+        "text": "Eight"
+      },
+      "rep-9": {
+        "file": "en/rep-9.mp3",
+        "text": "Nine"
+      },
+      "rep-10": {
+        "file": "en/rep-10.mp3",
+        "text": "Ten"
+      },
+      "rep-11": {
+        "file": "en/rep-11.mp3",
+        "text": "Eleven"
+      },
+      "rep-12": {
+        "file": "en/rep-12.mp3",
+        "text": "Twelve"
+      },
+      "rep-13": {
+        "file": "en/rep-13.mp3",
+        "text": "Thirteen"
+      },
+      "rep-14": {
+        "file": "en/rep-14.mp3",
+        "text": "Fourteen"
+      },
+      "rep-15": {
+        "file": "en/rep-15.mp3",
+        "text": "Fifteen"
+      },
+      "rep-16": {
+        "file": "en/rep-16.mp3",
+        "text": "Sixteen"
+      },
+      "rep-17": {
+        "file": "en/rep-17.mp3",
+        "text": "Seventeen"
+      },
+      "rep-18": {
+        "file": "en/rep-18.mp3",
+        "text": "Eighteen"
+      },
+      "rep-19": {
+        "file": "en/rep-19.mp3",
+        "text": "Nineteen"
+      },
+      "rep-20": {
+        "file": "en/rep-20.mp3",
+        "text": "Twenty"
+      },
+      "wellDone": {
+        "file": "en/wellDone.mp3",
+        "text": "Well done!"
+      },
+      "rest": {
+        "file": "en/rest.mp3",
+        "text": "Rest now."
+      },
+      "setComplete": {
+        "file": "en/setComplete.mp3",
+        "text": "Set complete."
+      },
+      "notCounted": {
+        "file": "en/notCounted.mp3",
+        "text": "Not counted."
+      },
+      "higher": {
+        "file": "en/higher.mp3",
+        "text": "Go a little higher."
+      },
+      "fix-leanSideways": {
+        "file": "en/fix-leanSideways.mp3",
+        "text": "Stand straight — don't lean sideways"
+      },
+      "fix-shrug": {
+        "file": "en/fix-shrug.mp3",
+        "text": "Relax your shoulder, don't lift it"
+      },
+      "fix-backArch": {
+        "file": "en/fix-backArch.mp3",
+        "text": "Don't arch your back — keep it straight"
+      },
+      "fix-kneesIn": {
+        "file": "en/fix-kneesIn.mp3",
+        "text": "Push your knees outward, over your toes"
+      },
+      "fix-leanForward": {
+        "file": "en/fix-leanForward.mp3",
+        "text": "Keep your chest up — don't lean forward"
+      },
+      "fix-leanBack": {
+        "file": "en/fix-leanBack.mp3",
+        "text": "Sit upright — don't lean back"
+      },
+      "ex-shoulder-abduction-intro": {
+        "file": "en/ex-shoulder-abduction-intro.mp3",
+        "text": "Shoulder abduction. Stand facing the camera with your arms by your sides."
+      },
+      "ex-shoulder-abduction-step-1": {
+        "file": "en/ex-shoulder-abduction-step-1.mp3",
+        "text": "Raise your arms out to the sides, up to shoulder height"
+      },
+      "ex-shoulder-abduction-step-2": {
+        "file": "en/ex-shoulder-abduction-step-2.mp3",
+        "text": "Keep your elbows straight and shoulders relaxed"
+      },
+      "ex-shoulder-abduction-step-3": {
+        "file": "en/ex-shoulder-abduction-step-3.mp3",
+        "text": "Lower slowly back down"
+      },
+      "ex-shoulder-abduction-tip": {
+        "file": "en/ex-shoulder-abduction-tip.mp3",
+        "text": "Keep your shoulders relaxed and your body straight."
+      },
+      "ex-shoulder-flexion-intro": {
+        "file": "en/ex-shoulder-flexion-intro.mp3",
+        "text": "Shoulder flexion. Stand side-on to the camera with your arms by your sides."
+      },
+      "ex-shoulder-flexion-step-1": {
+        "file": "en/ex-shoulder-flexion-step-1.mp3",
+        "text": "Raise your arm forward and up, thumb pointing up"
+      },
+      "ex-shoulder-flexion-step-2": {
+        "file": "en/ex-shoulder-flexion-step-2.mp3",
+        "text": "Keep your back straight — do not lean back"
+      },
+      "ex-shoulder-flexion-step-3": {
+        "file": "en/ex-shoulder-flexion-step-3.mp3",
+        "text": "Lower slowly back down"
+      },
+      "ex-shoulder-flexion-tip": {
+        "file": "en/ex-shoulder-flexion-tip.mp3",
+        "text": "Keep your back straight — don't lean back."
+      },
+      "ex-mini-squat-intro": {
+        "file": "en/ex-mini-squat-intro.mp3",
+        "text": "Mini squat. Stand facing the camera, feet hip-width apart. Hold a chair if needed."
+      },
+      "ex-mini-squat-step-1": {
+        "file": "en/ex-mini-squat-step-1.mp3",
+        "text": "Bend your knees a little, as if starting to sit"
+      },
+      "ex-mini-squat-step-2": {
+        "file": "en/ex-mini-squat-step-2.mp3",
+        "text": "Keep your knees over your toes and chest up"
+      },
+      "ex-mini-squat-step-3": {
+        "file": "en/ex-mini-squat-step-3.mp3",
+        "text": "Stand back up slowly"
+      },
+      "ex-mini-squat-tip": {
+        "file": "en/ex-mini-squat-tip.mp3",
+        "text": "Keep your knees over your toes and your chest up."
+      },
+      "ex-seated-knee-extension-intro": {
+        "file": "en/ex-seated-knee-extension-intro.mp3",
+        "text": "Seated knee extension. Sit on a chair side-on to the camera, feet on the floor."
+      },
+      "ex-seated-knee-extension-step-1": {
+        "file": "en/ex-seated-knee-extension-step-1.mp3",
+        "text": "Straighten one knee, lifting your foot forward"
+      },
+      "ex-seated-knee-extension-step-2": {
+        "file": "en/ex-seated-knee-extension-step-2.mp3",
+        "text": "Hold for a moment with your back against the chair"
+      },
+      "ex-seated-knee-extension-step-3": {
+        "file": "en/ex-seated-knee-extension-step-3.mp3",
+        "text": "Lower your foot slowly"
+      },
+      "ex-seated-knee-extension-tip": {
+        "file": "en/ex-seated-knee-extension-tip.mp3",
+        "text": "Sit tall with your back against the chair."
+      }
+    }
+  }
+}
