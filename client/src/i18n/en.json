@@ -280,6 +280,44 @@
     "leftKnee": "Left knee",
     "rightKnee": "Right knee"
   },
+  "report": {
+    "uploadSubtitle": "Upload a photo or PDF of your MRI report. We will explain it and suggest exercises.",
+    "chooseFile": "Choose your report",
+    "changeFile": "Tap to choose a different file",
+    "fileHint": "PDF or photo (JPG, PNG), up to 10 MB",
+    "analyze": "Read my report",
+    "analyzing": "Reading your report…",
+    "analyzingHint": "This can take up to a minute.",
+    "skip": "Skip — choose exercises myself",
+    "privacy": "Only the report file is sent to our AI helper. Your camera video never leaves this device.",
+    "errors": {
+      "unsupported_file": "Please choose a PDF or a photo (JPG, PNG or WebP).",
+      "file_too_large": "This file is too large. Please choose one under 10 MB.",
+      "network": "Could not reach the Revive server. Check your internet and try again.",
+      "ai_unavailable": "Our AI helpers are busy right now. Please try again in a minute, or skip.",
+      "read_failed": "Could not read this file. Please try another one.",
+      "unknown": "Something went wrong. Please try again."
+    },
+    "resultsTitle": "Your report",
+    "answeredBy": "Answered by: {{provider}}",
+    "answeredByCached": "Saved answer from: {{provider}}",
+    "disclaimer": "These are AI suggestions. Always follow your doctor's or physiotherapist's advice.",
+    "findings": "What the report says",
+    "diagnosis": "Findings",
+    "severity": {
+      "mild": "Mild",
+      "moderate": "Moderate",
+      "severe": "Severe",
+      "unknown": "Severity not stated"
+    },
+    "focusOn": "Body parts to focus on",
+    "suggested": "Suggested exercises",
+    "noSuggestions": "None of our exercises is suggested for this report. Please ask your physiotherapist.",
+    "startExercise": "Start this exercise",
+    "avoid": "Avoid / be careful",
+    "chooseManually": "Choose exercises myself",
+    "uploadAnother": "Upload another report"
+  },
   "pages": {
     "progress": {
       "title": "Progress",

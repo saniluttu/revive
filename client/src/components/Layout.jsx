@@ -13,9 +13,8 @@ const NAV_BY_ROLE = {
     { to: '/exercises', label: 'nav.exercises' },
     { to: '/session', label: 'nav.session' },
     { to: '/progress', label: 'nav.progress' },
-    { to: '/reminders', label: 'nav.reminders' },
     { to: '/chat', label: 'nav.chat' },
-    { to: '/prescription', label: 'nav.prescription' },
+    // /reminders and /prescription still have routes but are hidden for the demo (parked)
   ],
   [ROLES.CAREGIVER]: [{ to: '/caregiver', label: 'nav.caregiver' }],
 }

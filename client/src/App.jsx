@@ -12,6 +12,7 @@ import Prescription from './pages/Prescription.jsx'
 import Profile from './pages/Profile.jsx'
 import Progress from './pages/Progress.jsx'
 import Reminders from './pages/Reminders.jsx'
+import ReportResults from './pages/ReportResults.jsx'
 import ReportUpload from './pages/ReportUpload.jsx'
 import SessionSummary from './pages/SessionSummary.jsx'
 import { homePathFor, ROLES } from './services/authService.js'
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/home" element={<PatientHome />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/report" element={<ReportUpload />} />
+          <Route path="/report/results" element={<ReportResults />} />
           <Route path="/exercises" element={<ExerciseSelect />} />
           <Route path="/session" element={<LiveSession />} />
           <Route path="/summary" element={<SessionSummary />} />

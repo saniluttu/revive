@@ -53,8 +53,11 @@ function* availableKeys(provider) {
  * @param {{role:'user'|'assistant', content:string}[]} req.messages
  * @param {{mimeType:string, data:string}[]} [req.images] base64 images (vision)
  * @param {boolean} [req.json] ask for a JSON response
+ * @param {number} [req.timeoutMs] per-call timeout (default 15 s)
+ * @param {(text:string) => any} [req.parse] validates/parses the reply; if it throws,
+ *   the next provider is tried (no cooldown — the provider itself is healthy)
  * @param {() => string} [req.fallback] cached/demo response if all providers fail
- * @returns {Promise<{text:string, provider:string, fallback?:boolean, message?:string}>}
+ * @returns {Promise<{text:string, data?:any, provider:string, fallback?:boolean, message?:string}>}
  */
 export async function route(req) {
   const task = req.task || 'text'
@@ -69,8 +72,16 @@ export async function route(req) {
       const started = Date.now()
       try {
         const text = await provider.call({ ...req, task, key })
+        let data
+        try {
+          data = req.parse ? req.parse(text) : undefined
+        } catch (err) {
+          errors.push(`${id}: invalid reply: ${err.message}`)
+          console.warn(`[llmRouter] ${id} gave an invalid reply: ${err.message}`)
+          break // same model on another key would likely answer the same way
+        }
         console.log(`[llmRouter] ${task} answered by ${name} (${Date.now() - started} ms)`)
-        return { text, provider: name }
+        return { text, data, provider: name }
       } catch (err) {
         errors.push(`${id}: ${err.message}`)
         console.warn(`[llmRouter] ${id} failed: ${err.message}`)

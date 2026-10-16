@@ -77,6 +77,13 @@ The app runs without them; Firebase features are disabled until they're set.
 - **LLM router:** `server/src/llm/llmRouter.js` tries Gemini, Groq and OpenRouter in order
   for each task. A key that hits a 429, timeout or 5xx cools down for 60 s and the router
   moves to the next one. If every provider fails, it returns a cached response.
+- **Report analysis (F3):** the Report page posts the PDF/photo to `POST /api/report/analyze`
+  (`server/src/routes/report.js`). The vision task goes to Gemini, then OpenRouter (Groq has
+  no vision). Replies are validated in `server/src/report/analysis.js`: only body parts and
+  exercise IDs from our library survive, and an invalid reply makes the router try the next
+  provider. The last good result per file (SHA-256) is saved in `server/cache/` (git-ignored)
+  and served if every provider fails — **run the demo report once before the demo** so it is
+  cached. Run the server tests with `cd server && npm test`.
 
 ## Build status
 

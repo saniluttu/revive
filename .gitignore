@@ -5,3 +5,6 @@ dist/
 !.env.example
 *.log
 .DS_Store
+
+# Report analysis cache (contains patient data)
+server/cache/
