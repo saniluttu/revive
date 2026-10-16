@@ -2,13 +2,14 @@
 // Tries providers in task order, skipping keys that are cooling down after a
 // 429 / quota / timeout / 5xx. If everything fails, returns a cached/demo response.
 
+import { chosenModels } from './models.js'
 import { PROVIDERS } from './providers.js'
 
 const COOLDOWN_MS = 60_000
 
 // Provider order per task type
 const TASK_ORDER = {
-  vision: ['gemini', 'openrouter'],
+  vision: ['gemini', 'groq', 'openrouter'], // Groq only if it has a vision model and no PDF is attached
   chat: ['groq', 'gemini', 'openrouter'],
   text: ['gemini', 'groq', 'openrouter'],
 }
@@ -25,6 +26,11 @@ function keysFor(provider) {
 
 function isCoolingDown(id) {
   return (keyState.get(id) || 0) > Date.now()
+}
+
+// The model itself is wrong (gone, renamed, no longer free) — every key will fail the same way
+function isModelError(err) {
+  return err.status === 404 || err.status === 402
 }
 
 function shouldCoolDown(err) {
@@ -66,7 +72,7 @@ export async function route(req) {
 
   for (const name of order) {
     const provider = PROVIDERS[name]
-    if (req.images?.length && !provider.supportsVision) continue
+    if (!provider.supports({ ...req, task })) continue
 
     for (const { id, key } of availableKeys(provider)) {
       const started = Date.now()
@@ -84,6 +90,13 @@ export async function route(req) {
         return { text, data, provider: name }
       } catch (err) {
         errors.push(`${id}: ${err.message}`)
+        if (isModelError(err)) {
+          console.error(
+            `[llmRouter] ${name} model "${err.model}" is not available (HTTP ${err.status}). ` +
+              `Change ${err.modelEnv} in server/.env to a current model, then restart the server. ${err.message}`,
+          )
+          break
+        }
         console.warn(`[llmRouter] ${id} failed: ${err.message}`)
         if (shouldCoolDown(err)) keyState.set(id, Date.now() + COOLDOWN_MS)
       }
@@ -101,10 +114,11 @@ export async function route(req) {
 
 // Summary for /api/health
 export function status() {
+  const models = chosenModels()
   return Object.values(PROVIDERS).map((p) => {
     const keys = keysFor(p)
     const cooling = keys.filter((_, i) => isCoolingDown(`${p.name}:${i}`)).length
-    return { provider: p.name, keys: keys.length, coolingDown: cooling }
+    return { provider: p.name, keys: keys.length, coolingDown: cooling, models: models[p.name] }
   })
 }
 

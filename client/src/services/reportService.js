@@ -16,6 +16,25 @@ class ReportError extends Error {
   }
 }
 
+// The AI providers are sent PDFs, JPEGs and PNGs only, so other images become JPEG
+const SENT_AS_IS = ['application/pdf', 'image/jpeg', 'image/png']
+
+async function toJpeg(file) {
+  try {
+    const bitmap = await createImageBitmap(file)
+    const canvas = document.createElement('canvas')
+    canvas.width = bitmap.width
+    canvas.height = bitmap.height
+    canvas.getContext('2d').drawImage(bitmap, 0, 0)
+    bitmap.close()
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92))
+    if (!blob) throw new Error('encode failed')
+    return blob
+  } catch {
+    throw new ReportError('read_failed')
+  }
+}
+
 function readBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -33,13 +52,14 @@ export async function analyzeReport(file) {
   if (!REPORT_TYPES.includes(file.type)) throw new ReportError('unsupported_file')
   if (file.size > MAX_REPORT_BYTES) throw new ReportError('file_too_large')
 
-  const data = await readBase64(file)
+  const upload = SENT_AS_IS.includes(file.type) ? file : await toJpeg(file)
+  const data = await readBase64(upload)
   let res
   try {
     res = await fetch(`${API_BASE}/api/report/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ file: { name: file.name, mimeType: file.type, data } }),
+      body: JSON.stringify({ file: { name: file.name, mimeType: upload.type, data } }),
     })
   } catch {
     throw new ReportError('network')

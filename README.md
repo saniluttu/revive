@@ -77,9 +77,15 @@ The app runs without them; Firebase features are disabled until they're set.
 - **LLM router:** `server/src/llm/llmRouter.js` tries Gemini, Groq and OpenRouter in order
   for each task. A key that hits a 429, timeout or 5xx cools down for 60 s and the router
   moves to the next one. If every provider fails, it returns a cached response.
+- **Models:** every model name is an env var (`server/.env.example`). At startup
+  `server/src/llm/models.js` checks them against each provider's model list and logs what
+  it chose: OpenRouter auto-picks **free** models only (never a paid one), Groq is used for
+  report images only if it has a vision model, and a missing Gemini/Groq model is replaced
+  with a current one. A 404 at request time logs which env var to change. See the chosen
+  models at `/api/health`.
 - **Report analysis (F3):** the Report page posts the PDF/photo to `POST /api/report/analyze`
-  (`server/src/routes/report.js`). The vision task goes to Gemini, then OpenRouter (Groq has
-  no vision). Replies are validated in `server/src/report/analysis.js`: only body parts and
+  (`server/src/routes/report.js`). The vision task goes to Gemini, then Groq (images only, if
+  it has a vision model), then OpenRouter. Replies are validated in `server/src/report/analysis.js`: only body parts and
   exercise IDs from our library survive, and an invalid reply makes the router try the next
   provider. The last good result per file (SHA-256) is saved in `server/cache/` (git-ignored)
   and served if every provider fails — **run the demo report once before the demo** so it is

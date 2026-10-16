@@ -9,6 +9,8 @@ process.env.REPORT_CACHE_FILE = path.join(mkdtempSync(path.join(tmpdir(), 'reviv
 process.env.GEMINI_API_KEYS = 'g1'
 process.env.OPENROUTER_API_KEYS = 'o1'
 process.env.GROQ_API_KEYS = 'q1'
+process.env.OPENROUTER_MODEL = 'free/text:free'
+process.env.OPENROUTER_VISION_MODEL = 'free/vision:free'
 
 const express = (await import('express')).default
 const reportRouter = (await import('../src/routes/report.js')).default
@@ -57,8 +59,9 @@ after(() => server.close())
 
 const post = (file) =>
   realFetch(base, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file }) })
-const fileA = { name: 'a.png', mimeType: 'image/png', data: Buffer.from('report A').toString('base64') }
-const fileB = { name: 'b.png', mimeType: 'image/png', data: Buffer.from('report B').toString('base64') }
+const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+const fileA = { name: 'a.png', mimeType: 'image/png', data: Buffer.concat([PNG, Buffer.from('report A')]).toString('base64') }
+const fileB = { name: 'b.png', mimeType: 'image/png', data: Buffer.concat([PNG, Buffer.from('report B')]).toString('base64') }
 
 test('rejects unsupported files', async () => {
   const res = await post({ name: 'x.txt', mimeType: 'text/plain', data: 'aGk=' })

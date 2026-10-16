@@ -209,7 +209,7 @@ all failed → return cached/demo response + friendly message
 
 | Task | Primary | Fallbacks |
 |---|---|---|
-| Report reading (vision) | Gemini | OpenRouter vision model |
+| Report reading (vision) | Gemini | Groq vision model (images only) → OpenRouter free vision model |
 | Voice assistant answers | Groq | Gemini → OpenRouter |
 | Malayalam TTS | Sarvam AI / Google Cloud TTS (ml-IN) | Browser speechSynthesis |
 | Malayalam STT | Browser Web Speech (ml-IN) | Groq Whisper / Sarvam |

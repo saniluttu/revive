@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import cors from 'cors'
 import express from 'express'
+import { initModels } from './llm/models.js'
 import healthRouter from './routes/health.js'
 import reportRouter from './routes/report.js'
 
@@ -18,6 +19,8 @@ app.use((err, _req, res, _next) => {
   console.error(err)
   res.status(500).json({ error: 'Something went wrong' })
 })
+
+await initModels() // check/pick model names before taking requests
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Revive server listening on http://localhost:${PORT}`)

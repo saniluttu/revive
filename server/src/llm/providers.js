@@ -1,7 +1,14 @@
 // Provider adapters. Each exposes call({ key, system, messages, images, json, task, timeoutMs })
-// and returns the response text. Errors carry `status` (HTTP code) when known.
+// and returns the response text, plus supports(req) saying whether it can take
+// the request right now. Errors carry `status` (HTTP code) when known, and
+// `model` / `modelEnv` so a 404 can say which env var to change.
+
+import { modelEnvVar, modelFor } from './models.js'
 
 const TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS) || 15_000
+
+const isPdf = (img) => img.mimeType === 'application/pdf'
+const hasPdf = (req) => Boolean(req.images?.some(isPdf))
 
 async function postJson(url, headers, body, timeoutMs = TIMEOUT_MS) {
   const res = await fetch(url, {
@@ -32,7 +39,7 @@ function toOpenAIMessages({ system, messages, images }) {
           ...images.map((img) => {
             const url = `data:${img.mimeType};base64,${img.data}`
             // PDFs go as a file part (OpenRouter parses them); images as image_url
-            return img.mimeType === 'application/pdf'
+            return isPdf(img)
               ? { type: 'file', file: { filename: img.name || 'report.pdf', file_data: url } }
               : { type: 'image_url', image_url: { url } }
           }),
@@ -45,27 +52,43 @@ function toOpenAIMessages({ system, messages, images }) {
   return out
 }
 
+// Tag errors with the model, so the router can name the env var to fix on a 404
+async function withModel(provider, task, model, fn) {
+  try {
+    return await fn()
+  } catch (err) {
+    err.model = Array.isArray(model) ? model.join(', ') : model
+    err.modelEnv = modelEnvVar(provider, task)
+    throw err
+  }
+}
+
 export const gemini = {
   name: 'gemini',
   envKey: 'GEMINI_API_KEYS',
-  supportsVision: true,
-  async call({ key, system, messages, images, json, timeoutMs }) {
-    const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
+  supports: ({ task }) => Boolean(modelFor('gemini', task)),
+  async call({ key, system, messages, images, json, task, timeoutMs }) {
+    const model = modelFor('gemini', task)
     const contents = messages.map((m, i) => {
-      const parts = [{ text: m.content }]
+      const parts = []
+      // Files first, then the instruction (Gemini's recommended order).
+      // PDFs and images both go inline: { mime_type: 'application/pdf' | 'image/jpeg' | 'image/png' }
       if (i === messages.length - 1 && images?.length) {
         images.forEach((img) => parts.push({ inline_data: { mime_type: img.mimeType, data: img.data } }))
       }
+      parts.push({ text: m.content })
       return { role: m.role === 'assistant' ? 'model' : 'user', parts }
     })
     const body = { contents }
     if (system) body.systemInstruction = { parts: [{ text: system }] }
     if (json) body.generationConfig = { responseMimeType: 'application/json' }
-    const data = await postJson(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-      { 'x-goog-api-key': key },
-      body,
-      timeoutMs,
+    const data = await withModel('gemini', task, model, () =>
+      postJson(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        { 'x-goog-api-key': key },
+        body,
+        timeoutMs,
+      ),
     )
     const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('')
     if (!text) throw new Error('Gemini returned an empty response')
@@ -76,14 +99,15 @@ export const gemini = {
 export const groq = {
   name: 'groq',
   envKey: 'GROQ_API_KEYS',
-  supportsVision: false,
-  async call({ key, json, timeoutMs, ...req }) {
-    const body = {
-      model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
-      messages: toOpenAIMessages(req),
-    }
+  // Groq vision models take images only, not PDFs
+  supports: (req) => Boolean(modelFor('groq', req.task)) && !hasPdf(req),
+  async call({ key, json, task, timeoutMs, ...req }) {
+    const model = modelFor('groq', task)
+    const body = { model, messages: toOpenAIMessages(req) }
     if (json) body.response_format = { type: 'json_object' }
-    const data = await postJson('https://api.groq.com/openai/v1/chat/completions', { Authorization: `Bearer ${key}` }, body, timeoutMs)
+    const data = await withModel('groq', task, model, () =>
+      postJson('https://api.groq.com/openai/v1/chat/completions', { Authorization: `Bearer ${key}` }, body, timeoutMs),
+    )
     const text = data.choices?.[0]?.message?.content
     if (!text) throw new Error('Groq returned an empty response')
     return text
@@ -93,19 +117,22 @@ export const groq = {
 export const openrouter = {
   name: 'openrouter',
   envKey: 'OPENROUTER_API_KEYS',
-  supportsVision: true,
+  // Only free models are ever chosen (see models.js); none chosen → skip OpenRouter
+  supports: ({ task }) => Boolean(modelFor('openrouter', task)),
   async call({ key, json, task, timeoutMs, ...req }) {
-    const model =
-      task === 'vision'
-        ? process.env.OPENROUTER_VISION_MODEL || 'google/gemma-3-27b-it:free'
-        : process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct:free'
-    const body = { model, messages: toOpenAIMessages(req) }
+    const models = [modelFor('openrouter', task)].flat()
+    const body = { model: models[0], messages: toOpenAIMessages(req) }
+    if (models.length > 1) body.models = models // OpenRouter falls back through these in order
     if (json) body.response_format = { type: 'json_object' }
-    const data = await postJson(
-      'https://openrouter.ai/api/v1/chat/completions',
-      { Authorization: `Bearer ${key}`, 'X-Title': 'Revive' },
-      body,
-      timeoutMs,
+    // Free text extraction for PDFs (the default engine may be a paid OCR)
+    if (hasPdf(req)) body.plugins = [{ id: 'file-parser', pdf: { engine: 'pdf-text' } }]
+    const data = await withModel('openrouter', task, models, () =>
+      postJson(
+        'https://openrouter.ai/api/v1/chat/completions',
+        { Authorization: `Bearer ${key}`, 'X-Title': 'Revive' },
+        body,
+        timeoutMs,
+      ),
     )
     const text = data.choices?.[0]?.message?.content
     if (!text) throw new Error('OpenRouter returned an empty response')
