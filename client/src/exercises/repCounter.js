@@ -150,6 +150,11 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
         delete rep.crossStreaks[id]
       }
     }
+
+    if (strict && value > strict.maxPeak) {
+      activeFaults.push('tooHigh')
+      voidRep('tooHigh', t)
+    }
   }
 
   function endRep() {

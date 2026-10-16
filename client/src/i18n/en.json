@@ -220,7 +220,8 @@
     "kneesIn": "Push your knees outward, over your toes",
     "leanForward": "Keep your chest up — don't lean forward",
     "leanBack": "Sit upright — don't lean back",
-    "slowDown": "Slow down — rest your arm, then raise, hold and lower slowly"
+    "slowDown": "Slow down — rest your arm, then raise, hold and lower slowly",
+    "tooHigh": "Only up to shoulder height — not higher"
   },
   "parts": {
     "shoulder": "shoulders",
