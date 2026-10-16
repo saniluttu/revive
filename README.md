@@ -67,6 +67,11 @@ The app runs without them; Firebase features are disabled until they're set.
 
 - **Pose tracking:** `@mediapipe/tasks-vision` Pose Landmarker runs fully in the browser
   (`client/src/pose/`). Video never leaves the device.
+- **Rep counting:** `client/src/exercises/repCounter.js` turns each frame into one
+  range-of-motion number per exercise (`library.js`) and runs
+  `START → UP → TOP → DOWN → START`; a rep counts only if the target was reached.
+  Form rules from REQUIREMENTS.md F6 live in `rules.js`. Each rep gets a 0–100 score:
+  40 range of motion + 30 smoothness + 30 form. Run the tests with `cd client && npm test`.
 - **LLM router:** `server/src/llm/llmRouter.js` tries Gemini, Groq and OpenRouter in order
   for each task. A key that hits a 429, timeout or 5xx cools down for 60 s and the router
   moves to the next one. If every provider fails, it returns a cached response.
@@ -76,4 +81,5 @@ The app runs without them; Firebase features are disabled until they're set.
 - [x] Phase 1: Setup (client, server, Firebase config, LLM router skeleton)
 - [x] Phase 2: Auth & profile (local authService; Firebase Auth swap pending)
 - [x] Phase 3: Pose core (skeleton overlay + live joint angles)
-- [ ] Phases 4–13: see REQUIREMENTS.md §9
+- [x] Phase 4: Exercise library, body-part selection, rep counting + form rules + quality score
+- [ ] Phases 5–13: see REQUIREMENTS.md §9

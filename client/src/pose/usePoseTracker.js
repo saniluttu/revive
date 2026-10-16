@@ -24,7 +24,7 @@ async function createLandmarker() {
 /**
  * Runs MediaPipe Pose Landmarker on the webcam, entirely in the browser.
  * Attach `videoRef` to a <video> and `canvasRef` to an overlay <canvas>.
- * `onFrame(landmarks, angles)` is called every processed frame (for rep counting later).
+ * `onFrame(landmarks, angles, { width, height })` is called every processed frame.
  */
 export default function usePoseTracker({ onFrame } = {}) {
   const videoRef = useRef(null)
@@ -126,7 +126,7 @@ export default function usePoseTracker({ onFrame } = {}) {
       }
 
       const jointAngles = computeJointAngles(landmarks, w, h)
-      onFrameRef.current?.(landmarks ?? null, jointAngles)
+      onFrameRef.current?.(landmarks ?? null, jointAngles, { width: w, height: h })
 
       frames++
       if (now - fpsWindowStart >= 1000) {
