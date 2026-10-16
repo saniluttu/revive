@@ -118,6 +118,8 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
       lastRestT, // the up phase is timed from here
       holdMs: 0, // time at or above the target
       lastTopT: null, // the down phase is timed from here
+      trend: { dir: 'up', extreme: value }, // turning points beyond jitterDeg
+      peaks: 0,
     }
     if (strict && !armed) voidRep('slowDown', t)
   }
@@ -168,9 +170,27 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
       }
     }
 
+    if (strict) trackTrend(t)
     if (strict && value > strict.maxPeak) {
       activeFaults.push('tooHigh')
       voidRep('tooHigh', t)
+    }
+  }
+
+  // One smooth up-and-down: a fall of more than jitterDeg is a peak; rising
+  // again by more than jitterDeg after it is a second peak (waving, bouncing).
+  function trackTrend(t) {
+    const trend = rep.trend
+    if (trend.dir === 'up') {
+      if (value > trend.extreme) trend.extreme = value
+      else if (value < trend.extreme - strict.jitterDeg) {
+        rep.peaks++
+        rep.trend = { dir: 'down', extreme: value }
+      }
+    } else if (value < trend.extreme) trend.extreme = value
+    else if (value > trend.extreme + strict.jitterDeg) {
+      voidRep('smooth', t)
+      rep.trend = { dir: 'up', extreme: value }
     }
   }
 

@@ -224,7 +224,8 @@
     "tooHigh": "Only up to shoulder height — not higher",
     "straightArm": "Keep your arm straight — don't bend the elbow",
     "standStill": "Stand still — keep your hips and feet in place",
-    "sideways": "Raise your arm out to the side, not forward"
+    "sideways": "Raise your arm out to the side, not forward",
+    "smooth": "One smooth movement — no waving or bouncing"
   },
   "parts": {
     "shoulder": "shoulders",
