@@ -107,7 +107,28 @@
     "reportTitle": "റിപ്പോർട്ട് കൊടുക്കാം",
     "reportText": "MRI റിപ്പോർട്ട് നോക്കി വ്യായാമം പറഞ്ഞുതരും",
     "progressTitle": "എന്റെ പുരോഗതി",
-    "progressText": "എത്ര ഭേദമായി എന്ന് കാണാം"
+    "progressText": "എത്ര ഭേദമായി എന്ന് കാണാം",
+    "listenMl": "മലയാളത്തിൽ കേൾക്കാം",
+    "stopListening": "നിർത്തുക",
+    "todayPlan": "ഇന്നത്തെ വ്യായാമ പ്ലാൻ",
+    "chipExercises_one": "{{count}} വ്യായാമം",
+    "chipExercises_other": "{{count}} വ്യായാമങ്ങൾ",
+    "chipReps": "ആകെ {{count}} തവണ",
+    "chipChair": "കസേര വേണം",
+    "startSession": "വ്യായാമം തുടങ്ങുക",
+    "startSessionOther": "Start session",
+    "streak": "തുടർച്ചയായ ദിവസങ്ങൾ",
+    "streakDays_one": "{{count}} ദിവസം",
+    "streakDays_other": "{{count}} ദിവസം",
+    "streakDots": "കഴിഞ്ഞ 7 ദിവസം: {{n}} ദിവസം ചെയ്തു",
+    "weekSessions": "ഈ ആഴ്ചയിലെ സെഷനുകൾ",
+    "weekDays": "കഴിഞ്ഞ 7 ദിവസത്തിൽ {{n}} ദിവസം ചെയ്തു",
+    "avgQuality": "ശരാശരി നിലവാരം",
+    "outOf100": "100-ൽ",
+    "noSessions": "ഇതുവരെ സെഷൻ ഇല്ല",
+    "askRevive": "റിവൈവിനോട് ചോദിക്കൂ",
+    "more": "കൂടുതൽ",
+    "verifiedBy": "{{name}} അംഗീകരിച്ചു"
   },
   "bodyParts": {
     "shoulder": {
@@ -562,7 +583,9 @@
       "alreadyLinked": "നിങ്ങൾ ഇതിനകം ഈ രോഗിയുമായി ബന്ധിപ്പിച്ചിട്ടുണ്ട്.",
       "network": "കണക്റ്റ് ചെയ്യാൻ കഴിയുന്നില്ല. ഇന്റർനെറ്റ് പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കൂ.",
       "unknown": "എന്തോ പിശക് സംഭവിച്ചു. വീണ്ടും ശ്രമിക്കൂ."
-    }
+    },
+    "copy": "പകർത്തുക",
+    "copied": "പകർത്തി!"
   },
   "history": {
     "empty": "ഇതുവരെ സെഷനുകൾ ഇല്ല. ഒരു വ്യായാമം പൂർത്തിയാക്കിയാൽ ഇവിടെ കാണാം.",

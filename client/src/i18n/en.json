@@ -107,7 +107,28 @@
     "reportTitle": "Upload report",
     "reportText": "Get exercise suggestions from your MRI report",
     "progressTitle": "My progress",
-    "progressText": "See how you are improving"
+    "progressText": "See how you are improving",
+    "listenMl": "Listen in Malayalam",
+    "stopListening": "Stop",
+    "todayPlan": "Today's exercise plan",
+    "chipExercises_one": "{{count}} exercise",
+    "chipExercises_other": "{{count}} exercises",
+    "chipReps": "{{count}} reps in total",
+    "chipChair": "Chair needed",
+    "startSession": "Start session",
+    "startSessionOther": "വ്യായാമം തുടങ്ങുക",
+    "streak": "Day streak",
+    "streakDays_one": "{{count}} day",
+    "streakDays_other": "{{count}} days",
+    "streakDots": "Last 7 days: exercised on {{n}}",
+    "weekSessions": "Sessions this week",
+    "weekDays": "Exercised on {{n}} of the last 7 days",
+    "avgQuality": "Average quality",
+    "outOf100": "out of 100",
+    "noSessions": "No sessions yet",
+    "askRevive": "Ask Revive",
+    "more": "More",
+    "verifiedBy": "Approved by {{name}}"
   },
   "bodyParts": {
     "shoulder": {
@@ -562,7 +583,9 @@
       "alreadyLinked": "You are already linked to this patient.",
       "network": "Can't connect. Check your internet and try again.",
       "unknown": "Something went wrong. Please try again."
-    }
+    },
+    "copy": "Copy",
+    "copied": "Copied!"
   },
   "history": {
     "empty": "No sessions yet. Finish an exercise and it will show up here.",
