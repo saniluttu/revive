@@ -103,9 +103,10 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
     message = { ...m, kind, until: t + hold }
   }
 
-  function startRep(t) {
+  function startRep(t, side) {
     rep = {
       start: t,
+      side, // strict: visibility is checked on this arm until the rep ends
       lastT: t,
       startValue: value,
       peak: value,
@@ -287,7 +288,7 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
       case 'START':
         if (value > rest + hyst) {
           phase = 'UP'
-          startRep(t)
+          startRep(t, f.working)
         }
         break
       case 'UP':
@@ -398,6 +399,21 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
       return snapshot(t)
     }
     view = f.view
+
+    // strict: pause while the working arm isn't seen clearly; a rep in progress is dropped
+    if (strict && status === 'active') {
+      const side = rep?.side ?? f.working
+      const seen = side ? Object.values(f.sides[side].visibility) : []
+      if (!seen.length || Math.min(...seen) < strict.minVisibility) {
+        if (rep) {
+          phase = 'START'
+          endRep()
+        }
+        activeFaults = ['stepBack']
+        return snapshot(t)
+      }
+      if (activeFaults[0] === 'stepBack') activeFaults = []
+    }
 
     const raw = exercise.metric(f, baseline)
     if (raw == null) return snapshot(t)
