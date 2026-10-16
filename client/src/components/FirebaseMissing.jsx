@@ -10,19 +10,19 @@ export default function FirebaseMissing({ missing }) {
         <LanguageToggle />
       </div>
       <div role="alert" className="card space-y-4 ring-red-200">
-        <h1 className="text-3xl font-bold text-red-800">{t('firebaseMissing.title')}</h1>
-        <p className="text-lg text-slate-700">{t('firebaseMissing.text')}</p>
+        <h1 className="text-3xl font-bold text-error">{t('firebaseMissing.title')}</h1>
+        <p className="text-body-lg text-on-surface-variant">{t('firebaseMissing.text')}</p>
         <div>
-          <div className="text-base font-semibold text-slate-600">{t('firebaseMissing.vars')}</div>
+          <div className="text-base font-semibold text-on-surface-variant">{t('firebaseMissing.vars')}</div>
           <ul className="mt-2 space-y-1">
             {missing.map((name) => (
               <li key={name}>
-                <code className="rounded-lg bg-slate-100 px-2 py-1 text-base">{name}</code>
+                <code className="rounded-lg bg-surface-container px-2 py-1 text-base">{name}</code>
               </li>
             ))}
           </ul>
         </div>
-        <p className="text-lg text-slate-700">{t('firebaseMissing.hint')}</p>
+        <p className="text-body-lg text-on-surface-variant">{t('firebaseMissing.hint')}</p>
       </div>
     </main>
   )

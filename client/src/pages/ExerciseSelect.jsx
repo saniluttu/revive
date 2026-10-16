@@ -12,9 +12,9 @@ import InstructionSteps, { ReadAloudToggle } from '../voice/InstructionSteps.jsx
 import useInstructions, { useReadAloud } from '../voice/useInstructions.js'
 
 const DIFFICULTY_STYLE = {
-  easy: 'bg-brand-100 text-brand-800',
+  easy: 'bg-primary-fixed/50 text-primary',
   medium: 'bg-amber-100 text-amber-900',
-  hard: 'bg-red-100 text-red-800',
+  hard: 'bg-red-100 text-error',
 }
 
 // `autoPlay`: read the steps aloud as soon as the card appears (after a click, so audio may play)
@@ -29,14 +29,14 @@ function ExerciseCard({ exercise, autoPlay }) {
   return (
     <article className="card flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <h3 className="text-2xl font-bold">{t(`${ex}.name`)}</h3>
+        <h3 className="text-headline-md">{t(`${ex}.name`)}</h3>
         <span
           className={`whitespace-nowrap rounded-full px-3 py-1 text-base font-semibold ${DIFFICULTY_STYLE[exercise.difficulty]}`}
         >
           {t(`difficulty.${exercise.difficulty}`)}
         </span>
       </div>
-      <div className="flex flex-wrap gap-x-6 gap-y-1 text-lg text-slate-700">
+      <div className="flex flex-wrap gap-x-6 gap-y-1 text-body-lg text-on-surface-variant">
         <span>
           <Trans
             i18nKey="exerciseSelect.repsSets"
@@ -73,14 +73,14 @@ export default function ExerciseSelect() {
   return (
     <section className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold sm:text-4xl">{t('exerciseSelect.title')}</h1>
-        <p className="mt-1 text-xl text-slate-600">{t('exerciseSelect.subtitle')}</p>
+        <h1 className="page-title">{t('exerciseSelect.title')}</h1>
+        <p className="page-subtitle">{t('exerciseSelect.subtitle')}</p>
       </div>
 
       {!hasApprovedPlan && (
-        <p role="note" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl bg-sky-50 p-4 text-lg text-sky-950 ring-1 ring-sky-200">
+        <p role="note" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-sky-50 p-4 text-body-lg text-sky-950 ring-1 ring-sky-200">
           <span className="font-semibold">{t('review.recommended')}</span>
-          <Link to="/report" className="font-semibold text-brand-700 underline">
+          <Link to="/report" className="font-semibold text-primary underline">
             {t('review.recommendedLink')}
           </Link>
         </p>
@@ -99,14 +99,14 @@ export default function ExerciseSelect() {
                 setAutoPlayPart(readAloud ? p.id : null)
               }}
               aria-pressed={selected}
-              className={`rounded-3xl border-2 p-4 text-left sm:p-5 transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                selected ? 'border-brand-600 bg-brand-50' : 'border-slate-200 bg-white hover:border-brand-500'
+              className={`rounded-xl border-2 p-4 text-left sm:p-5 transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                selected ? 'border-primary bg-surface-container-low' : 'border-outline-variant/60 bg-surface-container-lowest hover:border-primary'
               }`}
             >
-              <span className="block text-xl font-bold sm:text-2xl">{t(`bodyParts.${p.id}.name`)}</span>
-              <span className="mt-1 block text-base text-slate-600">{t(`bodyParts.${p.id}.conditions`)}</span>
+              <span className="block text-label-lg sm:text-2xl">{t(`bodyParts.${p.id}.name`)}</span>
+              <span className="mt-1 block text-base text-on-surface-variant">{t(`bodyParts.${p.id}.conditions`)}</span>
               {!p.available && (
-                <span className="mt-2 block text-base font-semibold text-slate-500">{t('exerciseSelect.comingSoon')}</span>
+                <span className="mt-2 block text-base font-semibold text-on-surface-variant">{t('exerciseSelect.comingSoon')}</span>
               )}
             </button>
           )
@@ -116,7 +116,7 @@ export default function ExerciseSelect() {
       {part ? (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-2xl font-bold">{t('exerciseSelect.partExercises', { part: t(`bodyParts.${part.id}.name`) })}</h2>
+            <h2 className="text-headline-md">{t('exerciseSelect.partExercises', { part: t(`bodyParts.${part.id}.name`) })}</h2>
             <ReadAloudToggle />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
@@ -126,7 +126,7 @@ export default function ExerciseSelect() {
           </div>
         </div>
       ) : (
-        <p className="card text-lg text-slate-500">{t('exerciseSelect.pickPart')}</p>
+        <p className="card text-body-lg text-on-surface-variant">{t('exerciseSelect.pickPart')}</p>
       )}
     </section>
   )

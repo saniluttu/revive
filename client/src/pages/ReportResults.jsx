@@ -11,10 +11,10 @@ import { lastReportResult } from '../services/reportService.js'
 import { requestReview, REVIEW_PRICE_INR, REVIEW_STATUS, reviewForReport } from '../services/reviewService.js'
 
 const SEVERITY_STYLE = {
-  mild: 'bg-brand-100 text-brand-800',
+  mild: 'bg-primary-fixed/50 text-primary',
   moderate: 'bg-amber-100 text-amber-900',
-  severe: 'bg-red-100 text-red-800',
-  unknown: 'bg-slate-100 text-slate-700',
+  severe: 'bg-red-100 text-error',
+  unknown: 'bg-surface-container text-on-surface-variant',
 }
 
 const PROVIDER_NAMES = { ollama: 'Ollama (local)', gemini: 'Gemini', groq: 'Groq', openrouter: 'OpenRouter' }
@@ -32,7 +32,7 @@ function ProviderBadge({ provider, cached }) {
 function Section({ title, children }) {
   return (
     <div className="card space-y-3">
-      <h2 className="text-2xl font-bold">{title}</h2>
+      <h2 className="text-headline-md">{title}</h2>
       {children}
     </div>
   )
@@ -45,16 +45,16 @@ function SuggestedExercise({ exercise, href, lockText }) {
   return (
     <Tag
       {...(href && { to: href })}
-      className={`flex flex-col gap-2 rounded-3xl border-2 bg-white p-5 transition ${
-        href ? 'border-brand-600 hover:-translate-y-0.5 hover:bg-brand-50 hover:shadow-md' : 'border-slate-200'
+      className={`flex flex-col gap-2 rounded-xl border-2 bg-surface-container-lowest p-5 transition ${
+        href ? 'border-primary hover:-translate-y-0.5 hover:bg-surface-container-low hover:shadow-md' : 'border-outline-variant/60'
       }`}
     >
-      <span className="text-base font-semibold uppercase tracking-wide text-brand-700">
+      <span className="text-base font-semibold uppercase tracking-wide text-primary">
         {t(`bodyParts.${exercise.bodyPart}.name`)}
       </span>
-      <span className="text-2xl font-bold">{t(`exercises.${exercise.id}.name`)}</span>
+      <span className="text-headline-md">{t(`exercises.${exercise.id}.name`)}</span>
       <ExerciseImages id={exercise.id} />
-      <span className="text-lg text-slate-600">
+      <span className="text-body-lg text-on-surface-variant">
         {t('session.repsSetsDifficulty', {
           reps: exercise.reps,
           sets: exercise.sets,
@@ -62,9 +62,9 @@ function SuggestedExercise({ exercise, href, lockText }) {
         })}
       </span>
       {href ? (
-        <span className="mt-1 text-lg font-semibold text-brand-700">{t('report.startExercise')} →</span>
+        <span className="mt-1 text-body-lg font-semibold text-primary">{t('report.startExercise')} →</span>
       ) : (
-        <span className="mt-1 text-base font-semibold text-slate-500">{t(lockText)}</span>
+        <span className="mt-1 text-base font-semibold text-on-surface-variant">{t(lockText)}</span>
       )}
     </Tag>
   )
@@ -91,8 +91,8 @@ function RequestReview({ onConfirm }) {
   if (!confirming) {
     return (
       <div className="card space-y-3">
-        <h2 className="text-2xl font-bold">{t('review.requestTitle')}</h2>
-        <p className="text-lg text-slate-700">{t('review.requestText')}</p>
+        <h2 className="text-headline-md">{t('review.requestTitle')}</h2>
+        <p className="text-body-lg text-on-surface-variant">{t('review.requestText')}</p>
         <button type="button" className="btn-primary w-full sm:w-auto" onClick={() => setConfirming(true)}>
           {t('review.requestButton', { price: REVIEW_PRICE_INR })}
         </button>
@@ -100,19 +100,19 @@ function RequestReview({ onConfirm }) {
     )
   }
   return (
-    <div className="card space-y-4 ring-2 ring-brand-600" role="group" aria-labelledby="confirm-review">
-      <h2 id="confirm-review" className="text-2xl font-bold">
+    <div className="card space-y-4 ring-2 ring-primary" role="group" aria-labelledby="confirm-review">
+      <h2 id="confirm-review" className="text-headline-md">
         {t('review.confirmTitle')}
       </h2>
-      <div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4 text-xl ring-1 ring-slate-200">
+      <div className="flex items-center justify-between gap-3 rounded-xl bg-surface-container-low p-4 text-body-xl ring-1 ring-outline-variant/40">
         <span>{t('review.confirmItem')}</span>
         <span className="font-bold tabular-nums">₹{REVIEW_PRICE_INR}</span>
       </div>
-      <p className="rounded-2xl bg-amber-50 p-4 text-lg font-semibold text-amber-900 ring-1 ring-amber-200">
+      <p className="rounded-xl bg-amber-50 p-4 text-body-lg font-semibold text-amber-900 ring-1 ring-amber-200">
         {t('review.demoNotice')}
       </p>
       {error && (
-        <p role="alert" className="rounded-2xl bg-red-50 p-4 text-lg font-semibold text-red-700">
+        <p role="alert" className="rounded-xl bg-red-50 p-4 text-body-lg font-semibold text-error">
           {t(`review.errors.${error}`, { defaultValue: t('errors.unknown') })}
         </p>
       )}
@@ -164,19 +164,19 @@ export default function ReportResults() {
     <section className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-3xl font-bold sm:text-4xl">{t('report.resultsTitle')}</h1>
-          {result.fileName && <p className="mt-1 break-all text-lg text-slate-500">{result.fileName}</p>}
+          <h1 className="page-title">{t('report.resultsTitle')}</h1>
+          {result.fileName && <p className="mt-1 break-all text-body-lg text-on-surface-variant">{result.fileName}</p>}
         </div>
         <ProviderBadge provider={provider} cached={cached} />
       </div>
 
-      <p role="note" className="rounded-2xl bg-amber-50 p-4 text-lg font-semibold text-amber-900 ring-1 ring-amber-200">
+      <p role="note" className="rounded-xl bg-amber-50 p-4 text-body-lg font-semibold text-amber-900 ring-1 ring-amber-200">
         {t('report.disclaimer')}
       </p>
 
       <Section title={t('report.findings')}>
-        <p className="text-xl leading-relaxed">{ml ? a.summary_ml : a.summary_en}</p>
-        <div className="flex flex-wrap items-center gap-3 text-lg text-slate-700">
+        <p className="text-body-xl leading-relaxed">{ml ? a.summary_ml : a.summary_en}</p>
+        <div className="flex flex-wrap items-center gap-3 text-body-lg text-on-surface-variant">
           <span>
             <strong>{t('report.diagnosis')}:</strong> {a.diagnosis}
           </span>
@@ -190,7 +190,7 @@ export default function ReportResults() {
         <Section title={t('report.focusOn')}>
           <div className="flex flex-wrap gap-2">
             {a.affected_body_parts.map((p) => (
-              <span key={p} className="rounded-full bg-brand-100 px-4 py-2 text-lg font-semibold text-brand-800">
+              <span key={p} className="rounded-full bg-primary-fixed/50 px-4 py-2 text-body-lg font-semibold text-primary">
                 {t(`bodyParts.${p}.name`)}
               </span>
             ))}
@@ -201,7 +201,7 @@ export default function ReportResults() {
       <Section title={t('report.suggested')}>
         {exercises.length ? (
           <>
-            {pick(a.reason) && <p className="text-lg text-slate-700">{pick(a.reason)}</p>}
+            {pick(a.reason) && <p className="text-body-lg text-on-surface-variant">{pick(a.reason)}</p>}
             <div className="grid gap-4 md:grid-cols-2">
               {exercises.map((e) => (
                 <SuggestedExercise
@@ -214,7 +214,7 @@ export default function ReportResults() {
             </div>
           </>
         ) : (
-          <p className="text-lg text-slate-600">{t('report.noSuggestions')}</p>
+          <p className="text-body-lg text-on-surface-variant">{t('report.noSuggestions')}</p>
         )}
       </Section>
 
@@ -222,7 +222,7 @@ export default function ReportResults() {
 
       {(a.avoid.length > 0 || a.restrictions.length > 0) && (
         <Section title={t('report.avoid')}>
-          <ul className="space-y-2 text-lg">
+          <ul className="space-y-2 text-body-lg">
             {[...a.avoid, ...a.restrictions].map((item, i) => (
               <li key={i} className="flex gap-3">
                 <span aria-hidden className="font-bold text-red-600">

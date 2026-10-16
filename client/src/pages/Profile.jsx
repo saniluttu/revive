@@ -20,13 +20,13 @@ function ChoiceGroup({ legend, name, options, value, onChange }) {
   const { t } = useTranslation()
   return (
     <fieldset>
-      <legend className="mb-2 text-lg font-semibold">{legend}</legend>
+      <legend className="mb-2 text-body-lg font-semibold">{legend}</legend>
       <div className={`grid gap-3 ${options.length === 3 ? 'grid-cols-1 min-[400px]:grid-cols-3' : 'grid-cols-2'}`}>
         {options.map((o) => (
           <label
             key={o.value}
-            className={`cursor-pointer rounded-2xl border-2 px-3 py-3 text-center transition ${
-              value === o.value ? 'border-brand-600 bg-brand-50' : 'border-slate-200 hover:border-slate-300'
+            className={`cursor-pointer rounded-xl border-2 px-3 py-3 text-center transition ${
+              value === o.value ? 'border-primary bg-surface-container-low' : 'border-outline-variant/60 hover:border-outline-variant'
             }`}
           >
             <input
@@ -37,10 +37,10 @@ function ChoiceGroup({ legend, name, options, value, onChange }) {
               onChange={() => onChange(o.value)}
               className="sr-only"
             />
-            <span lang={o.lang} className="block text-xl font-bold">
+            <span lang={o.lang} className="block text-label-lg">
               {t(o.label)}
             </span>
-            {o.hint && t(o.hint) !== t(o.label) && <span className="block text-base text-slate-600">{t(o.hint)}</span>}
+            {o.hint && t(o.hint) !== t(o.label) && <span className="block text-base text-on-surface-variant">{t(o.hint)}</span>}
           </label>
         ))}
       </div>
@@ -89,20 +89,20 @@ export default function Profile() {
   return (
     <section className="mx-auto max-w-lg space-y-6">
       <div>
-        <h1 className="text-3xl font-bold sm:text-4xl">{isSetup ? t('profile.setupTitle') : t('profile.title')}</h1>
-        <p className="mt-2 text-xl text-slate-600">
+        <h1 className="page-title">{isSetup ? t('profile.setupTitle') : t('profile.title')}</h1>
+        <p className="mt-2 text-body-xl text-on-surface-variant">
           {isSetup ? t('profile.setupSubtitle') : user?.email}
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="card space-y-5">
         <label className="block">
-          <span className="mb-1 block text-lg font-semibold">{t('profile.name')}</span>
+          <span className="mb-1 block text-body-lg font-semibold">{t('profile.name')}</span>
           <input className="input" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} required />
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-lg font-semibold">{t('profile.age')}</span>
+          <span className="mb-1 block text-body-lg font-semibold">{t('profile.age')}</span>
           <input
             className="input w-32"
             type="number"
@@ -119,12 +119,12 @@ export default function Profile() {
         <ChoiceGroup legend={t('profile.language')} name="language" options={LANGUAGES} value={language} onChange={setLanguage} />
 
         {error && (
-          <div role="alert" className="rounded-2xl bg-red-50 p-4 text-lg font-semibold text-red-800 ring-1 ring-red-200">
+          <div role="alert" className="rounded-xl bg-red-50 p-4 text-body-lg font-semibold text-error ring-1 ring-red-200">
             {t(error, { defaultValue: t('errors.unknown') })}
           </div>
         )}
         {saved && (
-          <div role="status" className="rounded-2xl bg-brand-50 p-4 text-lg font-semibold text-brand-800 ring-1 ring-brand-100">
+          <div role="status" className="rounded-xl bg-surface-container-low p-4 text-body-lg font-semibold text-primary ring-1 ring-primary-fixed">
             {t('profile.saved')}
           </div>
         )}

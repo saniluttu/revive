@@ -31,18 +31,18 @@ export default function ReportUpload() {
   return (
     <section className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold sm:text-4xl">{t('pages.report.title')}</h1>
-        <p className="mt-1 text-xl text-slate-600">{t('report.uploadSubtitle')}</p>
+        <h1 className="page-title">{t('pages.report.title')}</h1>
+        <p className="page-subtitle">{t('report.uploadSubtitle')}</p>
       </div>
 
       <form onSubmit={handleAnalyze} className="card space-y-5">
         <label
-          className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-3xl border-2 border-dashed p-8 text-center transition ${
-            file ? 'border-brand-600 bg-brand-50' : 'border-slate-300 hover:border-brand-500'
+          className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-8 text-center transition ${
+            file ? 'border-primary bg-surface-container-low' : 'border-outline-variant hover:border-primary'
           }`}
         >
-          <span className="text-2xl font-bold">{file ? file.name : t('report.chooseFile')}</span>
-          <span className="text-lg text-slate-600">{file ? t('report.changeFile') : t('report.fileHint')}</span>
+          <span className="text-headline-md">{file ? file.name : t('report.chooseFile')}</span>
+          <span className="text-body-lg text-on-surface-variant">{file ? t('report.changeFile') : t('report.fileHint')}</span>
           <input
             type="file"
             accept={REPORT_TYPES.join(',')}
@@ -56,7 +56,7 @@ export default function ReportUpload() {
         </label>
 
         {error && (
-          <p role="alert" className="rounded-2xl bg-red-50 p-4 text-lg font-semibold text-red-700">
+          <p role="alert" className="rounded-xl bg-red-50 p-4 text-body-lg font-semibold text-error">
             {t(`report.errors.${error}`)}
           </p>
         )}
@@ -70,13 +70,13 @@ export default function ReportUpload() {
           </Link>
         </div>
         {busy && (
-          <p role="status" className="text-center text-lg text-slate-600">
+          <p role="status" className="text-center text-body-lg text-on-surface-variant">
             {t(retrying ? 'report.retryingHint' : 'report.analyzingHint')}
           </p>
         )}
       </form>
 
-      <p className="text-base text-slate-500">{t('report.privacy')}</p>
+      <p className="text-base text-on-surface-variant">{t('report.privacy')}</p>
     </section>
   )
 }
