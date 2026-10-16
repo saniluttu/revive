@@ -5,12 +5,11 @@
 
 import { modelEnvVar, modelFor } from './models.js'
 
-const TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS) || 15_000
 
 const isPdf = (img) => img.mimeType === 'application/pdf'
 const hasPdf = (req) => Boolean(req.images?.some(isPdf))
 
-async function postJson(url, headers, body, timeoutMs = TIMEOUT_MS) {
+async function postJson(url, headers, body, timeoutMs) {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...headers },

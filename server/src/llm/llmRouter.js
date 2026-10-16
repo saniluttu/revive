@@ -7,6 +7,12 @@ import { PROVIDERS } from './providers.js'
 
 const COOLDOWN_MS = 60_000
 
+// Per-call timeout by task: reading a report (free OpenRouter vision models are slow) gets 60 s
+const TIMEOUT_MS = {
+  vision: Number(process.env.LLM_VISION_TIMEOUT_MS) || 60_000,
+  default: Number(process.env.LLM_TIMEOUT_MS) || 15_000,
+}
+
 // Provider order per task type
 const TASK_ORDER = {
   vision: ['gemini', 'groq', 'openrouter'], // Groq only if it has a vision model and no PDF is attached
@@ -59,7 +65,7 @@ function* availableKeys(provider) {
  * @param {{role:'user'|'assistant', content:string}[]} req.messages
  * @param {{mimeType:string, data:string}[]} [req.images] base64 images (vision)
  * @param {boolean} [req.json] ask for a JSON response
- * @param {number} [req.timeoutMs] per-call timeout (default 15 s)
+ * @param {number} [req.timeoutMs] per-call timeout (default 60 s for vision, 15 s otherwise)
  * @param {(text:string) => any} [req.parse] validates/parses the reply; if it throws,
  *   the next provider is tried (no cooldown — the provider itself is healthy)
  * @param {() => string} [req.fallback] cached/demo response if all providers fail
@@ -68,6 +74,7 @@ function* availableKeys(provider) {
 export async function route(req) {
   const task = req.task || 'text'
   const order = TASK_ORDER[task] || TASK_ORDER.text
+  const timeoutMs = req.timeoutMs ?? TIMEOUT_MS[task] ?? TIMEOUT_MS.default
   const errors = []
 
   for (const name of order) {
@@ -77,7 +84,7 @@ export async function route(req) {
     for (const { id, key } of availableKeys(provider)) {
       const started = Date.now()
       try {
-        const text = await provider.call({ ...req, task, key })
+        const text = await provider.call({ ...req, task, key, timeoutMs })
         let data
         try {
           data = req.parse ? req.parse(text) : undefined

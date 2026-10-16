@@ -69,3 +69,23 @@ test('images fall back to Groq vision as image_url', async () => {
   assert.equal(groqBody.model, 'meta-llama/llama-4-scout-17b-16e-instruct')
   assert.deepEqual(groqBody.messages[0].content[1], { type: 'image_url', image_url: { url: 'data:image/png;base64,iVBORw0=' } })
 })
+
+test('vision calls get a 60 s timeout, chat calls 15 s', async () => {
+  const realTimeout = AbortSignal.timeout
+  const seen = []
+  AbortSignal.timeout = (ms) => (seen.push(ms), realTimeout.call(AbortSignal, ms))
+  // valid reply for every provider (earlier tests left Gemini cooling down)
+  globalThis.fetch = async () => Response.json({ ...ok, choices: [{ message: { content: '{"ok":1}' } }] })
+  try {
+    await route({ task: 'vision', messages: [{ role: 'user', content: 'read' }], images: [png] })
+    await route({ task: 'text', messages: [{ role: 'user', content: 'hi' }] })
+  } finally {
+    AbortSignal.timeout = realTimeout
+  }
+  assert.deepEqual(seen, [60_000, 15_000])
+})
+
+test('built-in Gemini default is gemini-3.8-flash', async () => {
+  const { DEFAULTS } = await import('../src/llm/models.js')
+  assert.equal(DEFAULTS.GEMINI_MODEL, 'gemini-3.8-flash')
+})

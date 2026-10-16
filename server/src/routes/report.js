@@ -14,7 +14,6 @@ function sniffType(bytes) {
   return null
 }
 const MAX_BYTES = 10 * 1024 * 1024
-const VISION_TIMEOUT_MS = 45_000 // reading a PDF takes longer than a chat reply
 
 // POST /api/report/analyze  { file: { name, mimeType, data (base64) } }
 // → { analysis, provider, cached?, message? }
@@ -34,7 +33,6 @@ router.post('/analyze', async (req, res) => {
     images: [{ name, mimeType, data }],
     json: true,
     parse: parseAnalysis,
-    timeoutMs: VISION_TIMEOUT_MS,
   })
 
   if (!result.fallback) {
