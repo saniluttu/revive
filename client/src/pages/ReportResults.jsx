@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import useAuth from '../auth/useAuth.js'
+import ExerciseImages from '../components/ExerciseImages.jsx'
 import { getExercise } from '../exercises/library.js'
 import { planSessionUrl } from '../reviews/plan.js'
 import PlanStatus from '../reviews/PlanStatus.jsx'
@@ -52,6 +53,7 @@ function SuggestedExercise({ exercise, href, lockText }) {
         {t(`bodyParts.${exercise.bodyPart}.name`)}
       </span>
       <span className="text-2xl font-bold">{t(`exercises.${exercise.id}.name`)}</span>
+      <ExerciseImages id={exercise.id} />
       <span className="text-lg text-slate-600">
         {t('session.repsSetsDifficulty', {
           reps: exercise.reps,

@@ -3,6 +3,7 @@ import { Trans, useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
 import useAuth from '../auth/useAuth.js'
 import AvatarPanel from '../avatar/AvatarPanel.jsx'
+import ExerciseImages from '../components/ExerciseImages.jsx'
 import { BODY_PARTS, exercisesFor } from '../exercises/library.js'
 import useReviews from '../reviews/useReviews.js'
 import { latestReviewFor, REVIEW_STATUS } from '../services/reviewService.js'
@@ -45,6 +46,7 @@ function ExerciseCard({ exercise, autoPlay }) {
         </span>
         <span>{t(exercise.view === 'side' ? 'exerciseSelect.sideView' : 'exerciseSelect.frontView')}</span>
       </div>
+      <ExerciseImages id={exercise.id} />
       <AvatarPanel exercise={exercise} step={instructions.step} className="h-[32rem]" />
       <InstructionSteps exercise={exercise} player={instructions} />
       <Link to={`/session?exercise=${exercise.id}`} className="btn-primary mt-auto">

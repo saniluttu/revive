@@ -1,0 +1,18 @@
+<!doctype html>
+<!-- Dev only (not part of the build): renders the 3D avatar in one still pose for
+     scripts/render-exercise-images.js, which saves client/public/images/exercises/*.png.
+     Open /render-exercise-images.html?exercise=mini-squat&pose=peak to preview. -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Exercise still</title>
+    <style>
+      html, body { margin: 0; background: transparent; }
+      #root { width: 520px; height: 400px; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/avatar/renderStill.jsx"></script>
+  </body>
+</html>

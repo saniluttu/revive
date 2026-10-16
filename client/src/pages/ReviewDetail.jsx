@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import useAuth from '../auth/useAuth.js'
+import ExerciseImages from '../components/ExerciseImages.jsx'
 import { EXERCISES } from '../exercises/library.js'
 import { doctorName, formatDate, planExercises, STATUS_BADGE } from '../reviews/plan.js'
 import useReviews, { useReviewsLoaded } from '../reviews/useReviews.js'
@@ -22,8 +23,11 @@ function PlanTable({ exercises }) {
   return (
     <ul className="divide-y divide-slate-200 rounded-2xl ring-1 ring-slate-200">
       {exercises.map((e) => (
-        <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-lg">
-          <span className="font-semibold">{t(`exercises.${e.id}.name`)}</span>
+        <li key={e.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-lg">
+          <span className="flex flex-wrap items-center gap-3">
+            <ExerciseImages id={e.id} size="sm" />
+            <span className="font-semibold">{t(`exercises.${e.id}.name`)}</span>
+          </span>
           <span className="text-slate-600">{t('review.repsSets', { reps: e.reps, sets: e.sets })}</span>
         </li>
       ))}
@@ -60,6 +64,7 @@ function PlanEditor({ plan, onChange }) {
     <div className="space-y-3">
       {plan.map((p, i) => (
         <div key={i} className="flex flex-wrap items-end gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <ExerciseImages id={p.exerciseId} size="sm" />
           <label className="block min-w-0 flex-1 basis-56">
             <span className="mb-1 block text-base font-semibold text-slate-600">{t('reviews.exercise')}</span>
             <select

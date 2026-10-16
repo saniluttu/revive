@@ -631,5 +631,11 @@
     "text": "Something went wrong on this page. The rest of the app still works.",
     "retry": "Try again",
     "details": "Error details"
+  },
+  "exerciseImages": {
+    "start": "Start position",
+    "peak": "Top position",
+    "caption": "{{start}} → {{peak}}",
+    "alt": "{{name}}: {{pose}}"
   }
 }
