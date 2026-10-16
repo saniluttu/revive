@@ -106,9 +106,12 @@ without a project, set `VITE_FIREBASE_EMULATOR=true` and run the emulators (belo
   Speech-to-text order: Sarvam → the browser's Web Speech transcript (recorded alongside) →
   Groq Whisper. **Cue pack:** `cd server && npm run voice-cues` pre-generates every Live Session
   cue (rep numbers 1–20, one correction per form rule, well done, rest, set complete, not counted,
-  go higher) in Malayalam and English into `client/public/audio/{ml,en}/` + `manifest.json`, from the
-  text in `en.json` / `ml.json`; re-run it after changing that text (only changed cues are redone,
-  `--force` redoes all). Commit `client/public/audio` afterwards, and restart `npm run dev` (Vite
+  go higher) and each exercise's intro, steps and tip — Malayalam first, then English — into
+  `client/public/audio/{ml,en}/` + `manifest.json`, from the text in `en.json` / `ml.json`. Built for
+  Sarvam's free-tier rate limit: one request at a time (`VOICE_CUE_DELAY_MS`, default 1500 ms); on 429
+  it waits Retry-After or 15 s → 30 s → 60 s, up to 5 tries, then moves on; files already there are
+  skipped, so **if the summary lists failures, just run it again** (`--force` regenerates everything;
+  reworded cues are redone automatically). Commit `client/public/audio` afterwards, and restart `npm run dev` (Vite
   only serves public files that existed when it started). The session plays the pack from memory,
   in the UI language, with a 3 s cooldown per cue. A cue missing from the pack is fetched once from
   Sarvam (`/api/tts`) when the page opens and cached in IndexedDB; only English ever falls back to

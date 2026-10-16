@@ -15,7 +15,18 @@ async function check(res) {
   if (res.ok) return res.json()
   const err = new Error(`Sarvam HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`)
   err.status = res.status
+  const retryAfter = parseRetryAfter(res.headers.get('retry-after'))
+  if (retryAfter != null) err.retryAfterMs = retryAfter
   throw err
+}
+
+/** Retry-After header (seconds, or an HTTP date) → ms; null if absent or unreadable. */
+export function parseRetryAfter(value, now = Date.now()) {
+  if (value == null || value === '') return null
+  const seconds = Number(value)
+  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000)
+  const date = Date.parse(value)
+  return Number.isNaN(date) ? null : Math.max(0, date - now)
 }
 
 function requireKey() {
