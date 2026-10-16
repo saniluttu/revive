@@ -34,6 +34,10 @@ export function kneeFlexionForDepth(pct) {
   return (2 * Math.acos(1 - pct / 100)) / RAD
 }
 
+// The rep counter measures hip–shoulder–elbow, and the hip sits inside the
+// shoulder, so the hip→shoulder line already leans out by this much (°).
+const TORSO_TILT = Math.atan2(BODY.shoulderWidth - BODY.hipWidth, BODY.hipDrop + BODY.spine + BODY.chest + BODY.shoulderHeight) / RAD
+
 // Relaxed standing: arms a touch away from the body, elbows soft.
 const STAND = {
   shoulderL: [0, 0, 6],
@@ -54,10 +58,10 @@ function blend(from, to, s) {
 const MOTIONS = {
   // Both arms out to the sides to shoulder height, elbows straight.
   'shoulder-abduction': (ex) => {
-    const top = ex.ideal
+    const top = ex.ideal - TORSO_TILT
     return {
       tempo: TEMPO,
-      peak: { shoulder: top },
+      peak: { shoulder: ex.ideal },
       pose: (s) => ({
         root: [0, 0, 0],
         joints: blend(

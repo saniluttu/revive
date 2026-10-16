@@ -49,6 +49,25 @@ export const BODY = {
 /** Standing height of the pelvis origin (feet flat, legs straight). */
 export const PELVIS_HEIGHT = BODY.ankleHeight + BODY.shin + BODY.thigh + BODY.hipDrop
 
+/** Each joint's parent and position relative to it — the skeleton both models are built on. */
+export const SKELETON = {
+  pelvis: { parent: null, offset: [0, PELVIS_HEIGHT, 0] },
+  spine: { parent: 'pelvis', offset: [0, BODY.spine, 0] },
+  chest: { parent: 'spine', offset: [0, BODY.chest, 0] },
+  neck: { parent: 'chest', offset: [0, BODY.neck, 0] },
+  head: { parent: 'neck', offset: [0, BODY.headOffset, 0] },
+  shoulderL: { parent: 'chest', offset: [BODY.shoulderWidth, BODY.shoulderHeight, 0] },
+  elbowL: { parent: 'shoulderL', offset: [0, -BODY.upperArm, 0] },
+  shoulderR: { parent: 'chest', offset: [-BODY.shoulderWidth, BODY.shoulderHeight, 0] },
+  elbowR: { parent: 'shoulderR', offset: [0, -BODY.upperArm, 0] },
+  hipL: { parent: 'pelvis', offset: [BODY.hipWidth, -BODY.hipDrop, 0] },
+  kneeL: { parent: 'hipL', offset: [0, -BODY.thigh, 0] },
+  ankleL: { parent: 'kneeL', offset: [0, -BODY.shin, 0] },
+  hipR: { parent: 'pelvis', offset: [-BODY.hipWidth, -BODY.hipDrop, 0] },
+  kneeR: { parent: 'hipR', offset: [0, -BODY.thigh, 0] },
+  ankleR: { parent: 'kneeR', offset: [0, -BODY.shin, 0] },
+}
+
 /**
  * Bone names of a Mixamo-rigged GLB for each joint, for when a modelled avatar
  * replaces the procedural one. Load the GLB, look the bones up with
