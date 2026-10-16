@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import useAuth from '../auth/useAuth.js'
-import useReviews from '../reviews/useReviews.js'
-import { latestReviewFor, REVIEW_STATUS } from '../services/reviewService.js'
+import { useApprovedPlan } from '../reviews/useReviews.js'
 import { askAssistant, questionText, speak, stopSpeaking } from '../services/voiceService.js'
 import { startRecording } from './recorder.js'
 
@@ -24,14 +22,6 @@ function StopIcon() {
       <rect x="6" y="6" width="12" height="12" rx="2" />
     </svg>
   )
-}
-
-/** The approved plan from the latest report review, as the assistant's context. */
-function useApprovedPlan() {
-  const { user } = useAuth()
-  const review = latestReviewFor(user.uid, useReviews())
-  if (review?.status !== REVIEW_STATUS.APPROVED) return []
-  return review.plan.map(({ exerciseId, reps, sets }) => ({ exerciseId, reps, sets }))
 }
 
 const STATUS_TEXT = {

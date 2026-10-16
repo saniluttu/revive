@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import { getExercise } from '../exercises/library.js'
-import { getReview, getReviewsState, onReviewsChanged, REVIEW_STATUS } from '../services/reviewService.js'
+import useAuth from '../auth/useAuth.js'
+import { getReview, getReviewsState, latestReviewFor, onReviewsChanged, REVIEW_STATUS } from '../services/reviewService.js'
 import { withPlanDose } from './plan.js'
 
 /** Live map of review requests `{ [id]: Review }`. Re-renders when any request changes. */
@@ -33,4 +34,12 @@ export function useSessionExercise(exerciseId, planId) {
     planLoading: !loaded,
     planReviewer: item ? review.reviewer : null,
   }
+}
+
+/** The logged-in patient's approved plan ([] if none), as context for the assistant. */
+export function useApprovedPlan() {
+  const { user } = useAuth()
+  const review = latestReviewFor(user?.uid, useReviews())
+  if (review?.status !== REVIEW_STATUS.APPROVED) return []
+  return review.plan.map(({ exerciseId, reps, sets }) => ({ exerciseId, reps, sets }))
 }

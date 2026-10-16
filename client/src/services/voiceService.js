@@ -61,7 +61,7 @@ export async function questionText(blob, browserText, lang, transcribeFn = trans
 
 /**
  * @param ctx { lang, exerciseId?, plan?: [{ exerciseId, reps, sets }], history?: [{ role, content }] }
- * @returns {Promise<{ reply: string | null, redFlag: boolean }>}
+ * @returns {Promise<{ reply: string | null, redFlag: boolean, provider: string | null }>}
  */
 export async function askAssistant(question, ctx) {
   const res = await post('/api/chat', {
@@ -70,7 +70,7 @@ export async function askAssistant(question, ctx) {
   })
   const body = await res.json().catch(() => ({}))
   if (!res.ok) throw new VoiceError(res.status === 503 ? 'aiUnavailable' : 'network')
-  return { reply: body.reply ?? null, redFlag: Boolean(body.redFlag) }
+  return { reply: body.reply ?? null, redFlag: Boolean(body.redFlag), provider: body.provider ?? null }
 }
 
 // ---------- speaking ----------

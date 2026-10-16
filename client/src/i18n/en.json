@@ -430,8 +430,8 @@
       "subtitle": "See your family member's progress and download the report."
     },
     "chat": {
-      "title": "Chat with Revive",
-      "subtitle": "Ask questions in Malayalam or English. Say \"Hey Revive\"."
+      "title": "Ask Revive",
+      "subtitle": "Questions about your exercises — speak or type, in Malayalam or English."
     },
     "prescription": {
       "title": "Prescription Assistant",
@@ -580,5 +580,22 @@
     "painBefore": "Before (0–10)",
     "painAfter": "After (0–10)",
     "needMore": "Do one more session to see the trend."
+  },
+  "chat": {
+    "tryAsking": "Try asking:",
+    "suggestions": [
+      "Which exercises should I do today?",
+      "My knee hurts — what should I do?",
+      "How many times should I do the mini squat?",
+      "How do I know I'm doing it right?"
+    ],
+    "placeholder": "Type your question…",
+    "send": "Send",
+    "micHint": "Tap the mic to talk, tap again to send — or hold it while you speak.",
+    "micRecording": "Listening… tap the mic (or let go) to send.",
+    "speakReplies": "Read answers aloud",
+    "answeredBy": "Answered by {{name}}",
+    "redFlagTitle": "Important",
+    "spoken": "Spoken question"
   }
 }
