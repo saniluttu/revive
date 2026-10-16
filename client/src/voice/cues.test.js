@@ -131,6 +131,33 @@ describe('cue queue', () => {
     expect(played).toEqual(['en:fix-shrug', 'en:fix-shrug'])
   })
 
+  it('reset clears cooldowns, so a new exercise can say "one" straight away', async () => {
+    const { queue, played, finish } = setup()
+    queue.say({ ids: ['rep-1'], priority: 'high' }, 'ml')
+    await finish()
+    queue.reset()
+    queue.say({ ids: ['rep-1'], priority: 'high' }, 'ml')
+    expect(played).toEqual(['ml:rep-1', 'ml:rep-1'])
+  })
+
+  it('a cue that fails to play is skipped and the queue keeps going', async () => {
+    const played = []
+    const output = {
+      play: vi.fn(async (id) => {
+        played.push(id)
+        if (id === 'rep-1') throw new Error('decode failed')
+      }),
+      stop: vi.fn(),
+    }
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const queue = createCueQueue({ output, now: () => 0 })
+    queue.say({ ids: ['rep-1', 'setComplete'], priority: 'high' }, 'ml')
+    await vi.waitFor(() => expect(played).toEqual(['rep-1', 'setComplete']))
+    await vi.waitFor(() => expect(queue.isPlaying()).toBe(false))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('decode failed'))
+    warn.mockRestore()
+  })
+
   it('drops a correction while something plays, but a rep interrupts', () => {
     const { queue, played, output } = setup()
     queue.say({ ids: ['fix-kneesIn'], priority: 'low' }, 'en')

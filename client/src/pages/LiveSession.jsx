@@ -13,7 +13,7 @@ import { PlanExerciseList } from '../reviews/PlanStatus.jsx'
 import useReviews, { useSessionExercise } from '../reviews/useReviews.js'
 import { latestReviewFor, REVIEW_STATUS } from '../services/reviewService.js'
 import { saveSession, sessionSummary } from '../services/sessionService.js'
-import { preloadCues, sayCues, stopCues, stopInstructions, unlockAudio } from '../voice/cuePlayer.js'
+import { preloadCues, resetCues, sayCues, stopCues, stopInstructions, unlockAudio } from '../voice/cuePlayer.js'
 import { cuesForUpdate } from '../voice/cues.js'
 import InstructionSteps, { ReadAloudToggle } from '../voice/InstructionSteps.jsx'
 import useInstructions, { useReadAloud } from '../voice/useInstructions.js'
@@ -265,7 +265,12 @@ export default function LiveSession() {
     if (exercise) preloadCues(i18n.language)
   }, [exercise, i18n.language])
 
-  useEffect(() => stopCues, [])
+  // Each exercise starts with fresh voice state (queue, cooldowns, instructions); same on leaving
+  const exerciseId = exercise?.id
+  useEffect(() => {
+    resetCues()
+    return resetCues
+  }, [exerciseId])
 
   function toggleCues() {
     cuesOnRef.current = !cuesOn

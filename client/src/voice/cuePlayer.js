@@ -34,8 +34,8 @@ export function createCueQueue({ output, now = () => performance.now(), cooldown
       const { id, lang } = queue.shift()
       try {
         await output.play(id, lang)
-      } catch {
-        // a cue that can't play is skipped
+      } catch (err) {
+        console.warn(`[voice] ✗ ${lang}/${id} — ${err?.message ?? err}`) // skip it, keep going
       }
     }
     if (myRun === run) playing = false
@@ -61,7 +61,13 @@ export function createCueQueue({ output, now = () => performance.now(), cooldown
     output.stop()
   }
 
-  return { say, stop, isPlaying: () => playing }
+  /** Stop and forget cooldowns — a fresh start for the next exercise. */
+  function reset() {
+    stop()
+    lastPlayed.clear()
+  }
+
+  return { say, stop, reset, isPlaying: () => playing }
 }
 
 // ---------- browser output: Web Audio (pack → cache → Sarvam), speechSynthesis for English only ----------
@@ -140,13 +146,47 @@ function loadCue(id, lang) {
   return buffers.get(key)
 }
 
-function playBuffer(buffer) {
+const LOAD_WAIT_MS = 3000 // a cue not ready by then is skipped (it keeps loading for next time)
+const END_GRACE_MS = 1500 // a clip that hasn't reported its end by duration + this is treated as ended
+
+const timeout = (promise, ms) => Promise.race([promise, new Promise((resolve) => setTimeout(() => resolve(null), ms))])
+
+/** A running AudioContext: resumes a suspended one, replaces a closed one. Null if it can't run. */
+async function runningContext() {
+  if (context?.state === 'closed') {
+    console.warn('[voice] audio context was closed — making a new one')
+    context = null
+  }
   const ctx = audioContext()
-  if (ctx.state === 'suspended') ctx.resume().catch(() => {})
+  if (!ctx) return null
+  if (ctx.state !== 'running') await timeout(ctx.resume().catch(() => {}), 1000)
+  if (ctx.state !== 'running') {
+    console.warn(`[voice] audio context is ${ctx.state} (the browser wants a click first) — cue skipped`)
+    return null
+  }
+  return ctx
+}
+
+async function playBuffer(buffer) {
+  const ctx = await runningContext()
+  if (!ctx) return
   return new Promise((resolve) => {
     const source = ctx.createBufferSource()
     source.buffer = buffer
     source.connect(ctx.destination)
+    let watchdog = null
+    const arm = () => {
+      clearTimeout(watchdog)
+      watchdog = setTimeout(() => {
+        console.warn('[voice] a cue never reported its end — moving on')
+        finish()
+      }, buffer.duration * 1000 + END_GRACE_MS)
+    }
+    const finish = () => {
+      clearTimeout(watchdog)
+      if (current === handle) current = null
+      resolve()
+    }
     const handle = {
       stop: () => {
         try {
@@ -154,17 +194,21 @@ function playBuffer(buffer) {
         } catch {
           // already stopped
         }
-        resolve()
+        finish()
       },
-      pause: () => ctx.suspend().catch(() => {}),
-      resume: () => ctx.resume().catch(() => {}),
+      pause: () => {
+        clearTimeout(watchdog)
+        ctx.suspend().catch(() => {})
+      },
+      resume: () => {
+        arm()
+        ctx.resume().catch(() => {})
+      },
     }
-    source.onended = () => {
-      if (current === handle) current = null
-      resolve()
-    }
+    source.onended = finish
     current = handle
     source.start()
+    arm()
   })
 }
 
@@ -195,7 +239,11 @@ function speakText(text, lang) {
 
 const browserOutput = {
   async play(id, lang) {
-    const cue = await loadCue(id, lang)
+    const cue = await timeout(loadCue(id, lang), LOAD_WAIT_MS)
+    if (!cue) {
+      console.warn(`[voice] ✗ ${lang}/${id} — not loaded within ${LOAD_WAIT_MS} ms, skipped (still loading for next time)`)
+      return
+    }
     if (cue.buffer) {
       console.info(`[voice] ▶ ${lang}/${id} ← ${cue.source}`)
       return playBuffer(cue.buffer)
@@ -243,6 +291,13 @@ export const sayCues = (update, lang) => {
   if (!instructions) queue.say(update, lang)
 }
 export const stopCues = () => queue.stop()
+
+/** Fresh voice state for a new exercise (or leaving the page): stops everything, clears cooldowns. */
+export function resetCues() {
+  stopInstructions()
+  queue.reset()
+  browserOutput.stop()
+}
 
 // ---------- instructions, read step by step ----------
 
