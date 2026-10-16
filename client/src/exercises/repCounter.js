@@ -95,6 +95,8 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
   let restAnchor = null // { t, lo, hi } while the arm is down and the angle stays within restStillDeg
   let armed = false // rested long enough for the next rep
   let lastRestT = 0 // last frame with the arm down
+  let lastReject = null // most recent reason a rep was not counted (debug overlay)
+  let elbow = null // working arm's elbow angle (debug overlay)
   const history = []
   const faultSince = {}
   let activeFaults = []
@@ -128,6 +130,7 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
   function voidRep(reason, t) {
     if (rep.voidReason) return
     rep.voidReason = reason
+    lastReject = reason
     say(msg('cues.notCounted', { reason: ruleMsg(reason) }), 'error', t, 2500)
   }
 
@@ -294,7 +297,8 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
       case 'UP':
         if (value >= target) {
           phase = 'TOP'
-          if (strict && t - rep.lastRestT < strict.minUpMs) voidRep('slowDown', t)
+          rep.upMs = t - rep.lastRestT
+          if (strict && rep.upMs < strict.minUpMs) voidRep('slowDown', t)
           checkBlockAtTarget(t)
         } else if (value <= rest) {
           // Came back down without reaching the target: no rep
@@ -372,6 +376,19 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
       missing,
       activeFaults,
       rejected: rep?.voidReason ?? null, // the rep in progress won't count, and why
+      debug: {
+        angle: value == null ? null : Math.round(value),
+        elbow: elbow == null ? null : Math.round(elbow),
+        side: rep?.side ?? null,
+        armed,
+        restMs: restAnchor ? Math.round(t - restAnchor.t) : 0,
+        upMs: rep ? Math.round(rep.upMs ?? t - rep.lastRestT) : null,
+        holdMs: rep ? Math.round(rep.holdMs) : null,
+        downMs: rep && phase === 'DOWN' && rep.lastTopT != null ? Math.round(t - rep.lastTopT) : null,
+        peak: rep ? Math.round(rep.peak) : null,
+        peaks: rep?.peaks ?? null,
+        lastReject,
+      },
       calibrationProgress:
         status === 'calibrating' && calibration ? clamp01((t - calibration.start) / CALIBRATION_MS) : 0,
       restRemainingMs: status === 'rest' ? Math.max(0, restUntil - t) : 0,
@@ -416,6 +433,7 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
       if (activeFaults[0] === 'stepBack') activeFaults = []
     }
 
+    elbow = f.working ? f.sides[f.working].elbowAngle : null
     const raw = exercise.metric(f, baseline)
     if (raw == null) return snapshot(t)
     value = value == null ? raw : value + SMOOTHING * (raw - value)
