@@ -35,11 +35,11 @@ function LinkForm({ links }) {
 
   return (
     <form onSubmit={submit} className="card space-y-3">
-      <h2 className="text-2xl font-bold">{t('link.addPatient')}</h2>
-      <p className="text-lg text-slate-600">{t('link.addPatientHint')}</p>
+      <h2 className="text-headline-md">{t('link.addPatient')}</h2>
+      <p className="text-body-lg text-on-surface-variant">{t('link.addPatientHint')}</p>
       <div className="flex flex-wrap gap-3">
         <input
-          className="w-48 rounded-xl border-2 border-slate-300 px-4 py-3 text-center font-mono text-2xl uppercase tracking-[0.3em]"
+          className="w-48 rounded-xl border-2 border-outline-variant px-4 py-3 text-center font-mono text-2xl uppercase tracking-[0.3em]"
           value={code}
           onChange={(e) => setCode(e.target.value)}
           maxLength={CODE_LENGTH + 2}
@@ -53,12 +53,12 @@ function LinkForm({ links }) {
         </button>
       </div>
       {error && (
-        <p role="alert" className="text-lg font-semibold text-red-700">
+        <p role="alert" className="text-body-lg font-semibold text-error">
           {t(`link.errors.${error}`, { defaultValue: t('errors.unknown') })}
         </p>
       )}
       {linkedName != null && (
-        <p role="status" className="text-lg font-semibold text-brand-700">
+        <p role="status" className="text-body-lg font-semibold text-primary">
           {t('link.linked', { name: linkedName || t('link.patient') })}
         </p>
       )}
@@ -80,21 +80,21 @@ function PatientCard({ link, selected, onSelect }) {
       type="button"
       onClick={onSelect}
       aria-pressed={selected}
-      className={`card space-y-2 text-left transition ${selected ? 'ring-4 ring-brand-500' : 'hover:ring-brand-500'}`}
+      className={`card space-y-2 text-left transition ${selected ? 'ring-4 ring-primary' : 'hover:ring-primary'}`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-2xl font-bold">{link.patientName || t('link.patient')}</span>
+        <span className="text-headline-md">{link.patientName || t('link.patient')}</span>
         {stats && (
-          <span className={`rounded-full px-3 py-1 text-base font-bold ${stats.doneToday ? 'bg-brand-100 text-brand-800' : 'bg-slate-100 text-slate-700'}`}>
+          <span className={`rounded-full px-3 py-1 text-base font-bold ${stats.doneToday ? 'bg-primary-fixed/50 text-primary' : 'bg-surface-container text-on-surface-variant'}`}>
             {t(stats.doneToday ? 'caregiver.doneToday' : 'caregiver.notDoneToday')}
           </span>
         )}
       </div>
-      <div className="text-lg text-slate-600">
+      <div className="text-body-lg text-on-surface-variant">
         {loading ? t('common.pleaseWait') : t('link.lastSession', { when: last ? formatDate(last.date, i18n.language) : t('link.never') })}
       </div>
       {quiet && (
-        <div role="alert" className="rounded-2xl bg-amber-100 px-4 py-2 text-lg font-semibold text-amber-950">
+        <div role="alert" className="rounded-xl bg-amber-100 px-4 py-2 text-body-lg font-semibold text-amber-950">
           ⚠ {t(last ? 'caregiver.noSession24h' : 'caregiver.noSessionYet')}
         </div>
       )}
@@ -130,8 +130,8 @@ function DownloadReport({ link, plan, sessions }) {
       <button type="button" className="btn-primary" onClick={download} disabled={busy || !sessions}>
         {busy ? t('caregiver.preparing') : `⬇ ${t('caregiver.downloadPdf')}`}
       </button>
-      <span className="text-base text-slate-500">{t('caregiver.pdfHint')}</span>
-      {error && <span className="text-lg font-semibold text-red-700">{t('caregiver.pdfFailed')}</span>}
+      <span className="text-base text-on-surface-variant">{t('caregiver.pdfHint')}</span>
+      {error && <span className="text-body-lg font-semibold text-error">{t('caregiver.pdfFailed')}</span>}
     </div>
   )
 }
@@ -149,17 +149,17 @@ function PatientPanel({ link }) {
       <Section title={t('link.plan')}>
         {plan?.exercises?.length ? (
           <>
-            <ul className="list-disc space-y-1 pl-6 text-lg">
+            <ul className="list-disc space-y-1 pl-6 text-body-lg">
               {plan.exercises.map((p) => (
                 <li key={p.exerciseId}>
                   {t(`exercises.${p.exerciseId}.name`, { defaultValue: p.exerciseId })} — {t('history.repsSets', { reps: p.reps, sets: p.sets })}
                 </li>
               ))}
             </ul>
-            {plan.notes && <p className="text-lg text-slate-600">{plan.notes}</p>}
+            {plan.notes && <p className="text-body-lg text-on-surface-variant">{plan.notes}</p>}
           </>
         ) : (
-          <p className="text-lg text-slate-500">{t('link.noPlan')}</p>
+          <p className="text-body-lg text-on-surface-variant">{t('link.noPlan')}</p>
         )}
       </Section>
       <SessionHistory sessions={sessions.data} loading={sessions.loading} error={sessions.error} />
@@ -177,8 +177,8 @@ export default function CaregiverDashboard() {
   return (
     <section className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold sm:text-4xl">{t('pages.caregiver.title')}</h1>
-        <p className="mt-1 text-xl text-slate-600">{t('pages.caregiver.subtitle')}</p>
+        <h1 className="page-title">{t('pages.caregiver.title')}</h1>
+        <p className="page-subtitle">{t('pages.caregiver.subtitle')}</p>
       </div>
 
       {error && <ErrorNote>{t('history.error')}</ErrorNote>}
