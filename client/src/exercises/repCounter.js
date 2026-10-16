@@ -371,6 +371,7 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
       viewMismatch: view != null && view !== exercise.view,
       missing,
       activeFaults,
+      rejected: rep?.voidReason ?? null, // the rep in progress won't count, and why
       calibrationProgress:
         status === 'calibrating' && calibration ? clamp01((t - calibration.start) / CALIBRATION_MS) : 0,
       restRemainingMs: status === 'rest' ? Math.max(0, restUntil - t) : 0,

@@ -45,7 +45,8 @@ const isPartial = (snap) => /\.cues\.partial$/.test(snap?.correction?.key ?? '')
 /**
  * What to say when the rep counter moves from `prev` to `next` (snapshots from repCounter.js).
  * Between sets the exercise's key tip is repeated.
- * `high` cues (rep finished, set/exercise done) interrupt whatever is playing;
+ * A rep that is rejected while still in progress is announced straight away.
+ * `high` cues (rep finished, rejected, set/exercise done) interrupt whatever is playing;
  * `low` ones (form corrections) are dropped if something is already playing.
  * @returns {{ ids: string[], priority: 'high'|'low' } | null}
  */
@@ -54,7 +55,10 @@ export function cuesForUpdate(prev, next, exerciseId) {
 
   if (next.attempts > prev.attempts) {
     const attempt = next.lastAttempt
-    if (!attempt.counted) return { ids: ['notCounted', `fix-${attempt.reason}`], priority: 'high' }
+    if (!attempt.counted) {
+      if (prev.rejected === attempt.reason) return null // already said when it happened
+      return { ids: ['notCounted', `fix-${attempt.reason}`], priority: 'high' }
+    }
     const ids = attempt.rep >= 1 && attempt.rep <= 20 ? [`rep-${attempt.rep}`] : []
     if (next.status === 'rest' && prev.status !== 'rest') {
       ids.push('setComplete', 'rest')
@@ -63,6 +67,9 @@ export function cuesForUpdate(prev, next, exerciseId) {
     if (next.status === 'done' && prev.status !== 'done') ids.push('wellDone')
     return ids.length ? { ids, priority: 'high' } : null
   }
+
+  // Said as soon as a rep in progress is rejected (too fast, too high, waving…)
+  if (next.rejected && next.rejected !== prev.rejected) return { ids: ['notCounted', `fix-${next.rejected}`], priority: 'high' }
 
   const fault = next.activeFaults?.[0]
   if (fault && fault !== prev.activeFaults?.[0]) return { ids: [`fix-${fault}`], priority: 'low' }
