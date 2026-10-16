@@ -10,8 +10,8 @@ export default function Progress() {
   return (
     <section className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold sm:text-4xl">{t('pages.progress.title')}</h1>
-        <p className="mt-1 text-xl text-slate-600">{t('pages.progress.subtitle')}</p>
+        <h1 className="page-title">{t('pages.progress.title')}</h1>
+        <p className="page-subtitle">{t('pages.progress.subtitle')}</p>
       </div>
       <SessionHistory sessions={data} loading={loading} error={error} />
     </section>

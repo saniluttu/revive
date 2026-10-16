@@ -3,8 +3,8 @@
 const W = 640
 const H = 220
 const PAD = { l: 40, r: 12, t: 12, b: 30 }
-const GRID = '#e2e8f0'
-const AXIS_TEXT = '#64748b'
+const GRID = '#dee8ff' // surface-container-high
+const AXIS_TEXT = '#3d4947' // on-surface-variant
 
 function Legend({ series }) {
   return (
@@ -75,7 +75,7 @@ export function LineChart({ points, series, max, ariaLabel }) {
 }
 
 /** @param bars [{ label, value, shortLabel? }] oldest → newest */
-export function BarChart({ bars, color = '#059669', ariaLabel }) {
+export function BarChart({ bars, color = '#00685f', ariaLabel }) {
   if (!bars.length) return null
   const max = Math.max(10, ...bars.map((b) => b.value))
   const slot = (W - PAD.l - PAD.r) / bars.length

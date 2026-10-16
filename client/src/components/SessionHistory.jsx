@@ -7,7 +7,7 @@ import { qualityTone, toneText } from './tone.js'
 import { Empty, ErrorNote, Section, StatCard, StatGrid } from './ui.jsx'
 
 const TREND_SESSIONS = 14
-const QUALITY = '#059669'
+const QUALITY = '#00685f'
 const PAIN = '#dc2626'
 
 const exerciseName = (t, id) => t(`exercises.${id}.name`, { defaultValue: id })
@@ -34,7 +34,7 @@ function SummaryCards({ stats }) {
 function Mini({ label, value, className = '' }) {
   return (
     <div>
-      <div className="text-sm font-semibold text-slate-500">{label}</div>
+      <div className="text-sm font-semibold text-on-surface-variant">{label}</div>
       <div className={`text-2xl font-extrabold tabular-nums ${className}`}>{value}</div>
     </div>
   )
@@ -46,8 +46,8 @@ function ExerciseBreakdown({ sessions }) {
     <Section title={t('history.byExercise')}>
       <div className="grid gap-3 md:grid-cols-2">
         {perExercise(sessions).map((r) => (
-          <div key={r.exercise} className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xl font-bold">{exerciseName(t, r.exercise)}</div>
+          <div key={r.exercise} className="rounded-xl bg-surface-container-low p-4 ring-1 ring-outline-variant/40">
+            <div className="text-label-lg">{exerciseName(t, r.exercise)}</div>
             <div className="mt-2 grid grid-cols-3 gap-2 text-center">
               <Mini label={t('history.sessions')} value={r.sessions} />
               <Mini label={t('history.reps')} value={r.reps} />
@@ -69,15 +69,15 @@ function RecentSessions({ sessions, limit }) {
   const { t, i18n } = useTranslation()
   return (
     <Section title={t('history.recent')}>
-      <ul className="divide-y divide-slate-200">
+      <ul className="divide-y divide-outline-variant/40">
         {sessions.slice(0, limit).map((s) => {
           const moves = Object.entries(s.wrongMoves ?? {})
           return (
-            <li key={s.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3 text-lg">
+            <li key={s.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3 text-body-lg">
               <div className="min-w-0">
                 <div className="font-bold">{exerciseName(t, s.exercise)}</div>
-                <div className="text-base text-slate-500">{formatDate(s.date, i18n.language)}</div>
-                <div className={`text-base ${moves.length ? 'text-amber-700' : 'text-brand-700'}`}>
+                <div className="text-base text-on-surface-variant">{formatDate(s.date, i18n.language)}</div>
+                <div className={`text-base ${moves.length ? 'text-amber-700' : 'text-primary'}`}>
                   {moves.length
                     ? moves.map(([id, n]) => t('session.faultCount', { message: t(`rules.${id}`), count: n })).join(' · ')
                     : t('history.noMistakes')}
@@ -85,7 +85,7 @@ function RecentSessions({ sessions, limit }) {
               </div>
               <div className="flex flex-wrap items-baseline gap-x-4 text-right">
                 <span>{t('history.repsInSets', { reps: s.reps, sets: s.sets })}</span>
-                {s.painAfter != null && <span className="text-slate-600">{t('history.pain', { pain: s.painAfter })}</span>}
+                {s.painAfter != null && <span className="text-on-surface-variant">{t('history.pain', { pain: s.painAfter })}</span>}
                 <span className={`font-bold ${toneText(qualityTone(s.quality))}`}>{t('history.quality', { quality: s.quality })}</span>
               </div>
             </li>
@@ -117,7 +117,7 @@ export default function SessionHistory({ sessions, loading, error, limit = 10 })
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title={t('history.qualityTrend')}>
           {recent.length < 2 ? (
-            <p className="text-lg text-slate-500">{t('history.needMore')}</p>
+            <p className="text-body-lg text-on-surface-variant">{t('history.needMore')}</p>
           ) : (
             <LineChart
               ariaLabel={t('history.qualityTrend')}
