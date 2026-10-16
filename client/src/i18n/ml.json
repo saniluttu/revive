@@ -418,7 +418,21 @@
     "rejectPlaceholder": "ഉദാ: വ്യായാമം തുടങ്ങും മുമ്പ് ക്ലിനിക്കിൽ വന്ന് കാണൂ.",
     "confirmReject": "പ്ലാൻ നിരസിക്കാം",
     "outcome": "നിങ്ങളുടെ തീരുമാനം",
-    "reviewedBy": "{{name}} {{date}}-ന് പരിശോധിച്ചു"
+    "reviewedBy": "{{name}} {{date}}-ന് പരിശോധിച്ചു",
+    "statPending": "നിങ്ങളെ കാത്തിരിക്കുന്നവ",
+    "statApprovedToday": "ഇന്ന് അംഗീകരിച്ചവ",
+    "statPatients": "നിങ്ങളുടെ രോഗികൾ",
+    "waitingHours_one": "{{count}} മണിക്കൂറായി കാത്തിരിക്കുന്നു",
+    "waitingHours_other": "{{count}} മണിക്കൂറായി കാത്തിരിക്കുന്നു",
+    "waitingDays_one": "{{count}} ദിവസമായി കാത്തിരിക്കുന്നു",
+    "waitingDays_other": "{{count}} ദിവസമായി കാത്തിരിക്കുന്നു",
+    "aiPlanShort_one": "AI പ്ലാൻ: {{list}}",
+    "aiPlanShort_other": "AI പ്ലാൻ ({{count}} വ്യായാമങ്ങൾ): {{list}}",
+    "review": "പരിശോധിക്കൂ",
+    "quickApprove": "നിർദ്ദേശിച്ചതുപോലെ അംഗീകരിക്കൂ",
+    "confirmApprove": "അതെ, ഈ പ്ലാൻ അംഗീകരിക്കൂ",
+    "noneReviewed": "നിങ്ങൾ ഇതുവരെ ഒരു പ്ലാനും പരിശോധിച്ചിട്ടില്ല.",
+    "cancel": "വേണ്ട"
   },
   "pages": {
     "progress": {

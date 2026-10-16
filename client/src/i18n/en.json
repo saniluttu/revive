@@ -418,7 +418,21 @@
     "rejectPlaceholder": "e.g. Please see me in the clinic before starting exercises.",
     "confirmReject": "Reject plan",
     "outcome": "Your decision",
-    "reviewedBy": "Reviewed by {{name}} on {{date}}"
+    "reviewedBy": "Reviewed by {{name}} on {{date}}",
+    "statPending": "Waiting for you",
+    "statApprovedToday": "Approved today",
+    "statPatients": "Your patients",
+    "waitingHours_one": "Waiting {{count}} hour",
+    "waitingHours_other": "Waiting {{count}} hours",
+    "waitingDays_one": "Waiting {{count}} day",
+    "waitingDays_other": "Waiting {{count}} days",
+    "aiPlanShort_one": "AI plan: {{list}}",
+    "aiPlanShort_other": "AI plan ({{count}} exercises): {{list}}",
+    "review": "Review",
+    "quickApprove": "Approve as suggested",
+    "confirmApprove": "Yes, approve this plan",
+    "noneReviewed": "You haven't reviewed any plans yet.",
+    "cancel": "Cancel"
   },
   "pages": {
     "progress": {
