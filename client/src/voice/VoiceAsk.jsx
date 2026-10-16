@@ -124,14 +124,14 @@ export default function VoiceAsk({ exerciseId = null, onBusyChange }) {
           aria-label={t(recording ? 'voice.micStop' : 'voice.micStart')}
           title={t(recording ? 'voice.micStop' : 'voice.micStart')}
           className={`flex h-20 w-20 shrink-0 items-center justify-center rounded-full text-white shadow-lg transition focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-100 disabled:opacity-50 ${
-            recording ? 'animate-pulse bg-red-600 hover:bg-red-700' : 'bg-brand-600 hover:bg-brand-700'
+            recording ? 'animate-pulse bg-red-600 hover:bg-red-700' : 'bg-primary hover:bg-primary-container'
           }`}
         >
           {recording ? <StopIcon /> : <MicIcon />}
         </button>
         <div className="min-w-0">
-          <h2 className="text-2xl font-bold">{t('voice.ask')}</h2>
-          <p className="text-lg text-slate-600" role="status" aria-live="polite">
+          <h2 className="text-headline-md">{t('voice.ask')}</h2>
+          <p className="text-body-lg text-on-surface-variant" role="status" aria-live="polite">
             {STATUS_TEXT[status] ? t(STATUS_TEXT[status]) : t('voice.askHint')}
           </p>
         </div>
@@ -143,33 +143,33 @@ export default function VoiceAsk({ exerciseId = null, onBusyChange }) {
       </div>
 
       {error && (
-        <div role="alert" className="rounded-2xl bg-red-50 p-4 text-lg font-semibold text-red-800 ring-1 ring-red-200">
+        <div role="alert" className="rounded-xl bg-red-50 p-4 text-body-lg font-semibold text-error ring-1 ring-red-200">
           {t(`voice.errors.${error}`)}
         </div>
       )}
 
       {question && (
-        <div className="space-y-3 text-lg">
+        <div className="space-y-3 text-body-lg">
           <div>
-            <div className="text-base font-semibold uppercase tracking-wide text-slate-500">{t('voice.youAsked')}</div>
+            <div className="text-base font-semibold uppercase tracking-wide text-on-surface-variant">{t('voice.youAsked')}</div>
             <p>{question}</p>
           </div>
           {answer && (
             <div
-              className={`rounded-2xl p-4 ring-1 ${
-                answer.redFlag ? 'bg-red-600 text-white ring-red-700' : 'bg-brand-50 text-slate-900 ring-brand-100'
+              className={`rounded-xl p-4 ring-1 ${
+                answer.redFlag ? 'bg-red-600 text-white ring-red-700' : 'bg-surface-container-low text-on-surface ring-primary-fixed'
               }`}
             >
               {!answer.redFlag && (
-                <div className="text-base font-semibold uppercase tracking-wide text-brand-800">{t('voice.answer')}</div>
+                <div className="text-base font-semibold uppercase tracking-wide text-primary">{t('voice.answer')}</div>
               )}
-              <p className={answer.redFlag ? 'text-2xl font-bold' : ''}>{answer.redFlag ? t('voice.redFlag') : answer.reply}</p>
+              <p className={answer.redFlag ? 'text-headline-md' : ''}>{answer.redFlag ? t('voice.redFlag') : answer.reply}</p>
             </div>
           )}
         </div>
       )}
 
-      <p className="text-sm text-slate-500">{t('voice.disclaimer')}</p>
+      <p className="text-sm text-on-surface-variant">{t('voice.disclaimer')}</p>
     </div>
   )
 }

@@ -55,7 +55,7 @@ function Toggle({ pressed, onClick, children }) {
       aria-pressed={pressed}
       onClick={onClick}
       className={`rounded-xl px-2.5 py-1.5 text-base font-semibold ring-1 transition ${
-        pressed ? 'bg-brand-600 text-white ring-brand-600' : 'bg-white text-slate-700 ring-slate-300 hover:ring-brand-500'
+        pressed ? 'bg-primary text-white ring-primary' : 'bg-surface-container-lowest text-on-surface-variant ring-outline-variant hover:ring-primary'
       }`}
     >
       {children}
@@ -65,7 +65,7 @@ function Toggle({ pressed, onClick, children }) {
 
 function Segmented({ label, options, value, onChange }) {
   return (
-    <div role="group" aria-label={label} className="inline-flex overflow-hidden rounded-xl ring-1 ring-slate-300">
+    <div role="group" aria-label={label} className="inline-flex overflow-hidden rounded-xl ring-1 ring-outline-variant">
       {options.map((o) => (
         <button
           key={o.value}
@@ -73,7 +73,7 @@ function Segmented({ label, options, value, onChange }) {
           aria-pressed={value === o.value}
           onClick={() => onChange(o.value)}
           className={`px-2.5 py-1.5 text-base font-semibold transition ${
-            value === o.value ? 'bg-brand-600 text-white' : 'bg-white text-slate-700 hover:bg-brand-50'
+            value === o.value ? 'bg-primary text-white' : 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low'
           }`}
         >
           {o.label}
@@ -142,17 +142,17 @@ function ExerciseAvatar({ exercise, step = null, onStep, prefs, setPrefs, classN
 
   const steps = t(`exercises.${exercise.id}.steps`, { returnObjects: true })
   const caption = current.step === PHASE_STEP.rest ? t('avatar.startPosition') : steps[current.step]
-  const unavailable = <p className="p-6 text-center text-lg text-slate-600">{t('avatar.unavailable')}</p>
+  const unavailable = <p className="p-6 text-center text-body-lg text-on-surface-variant">{t('avatar.unavailable')}</p>
 
   return (
-    <div className={`flex flex-col overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 ${className}`}>
+    <div className={`flex flex-col overflow-hidden rounded-xl bg-surface-container-lowest shadow-soft ring-1 ring-outline-variant/40 ${className}`}>
       <div className="flex items-baseline justify-between gap-2 px-4 pt-3">
-        <h2 className="text-xl font-bold">{t('avatar.title')}</h2>
+        <h2 className="text-label-lg">{t('avatar.title')}</h2>
         {ui.loop && current.rep > 0 && (
-          <span className="text-base font-semibold text-slate-500">{t('avatar.rep', { count: current.rep + 1 })}</span>
+          <span className="text-base font-semibold text-on-surface-variant">{t('avatar.rep', { count: current.rep + 1 })}</span>
         )}
       </div>
-      <p aria-live="polite" className="min-h-[3.5rem] px-4 pt-1 text-lg font-semibold leading-snug text-brand-800">
+      <p aria-live="polite" className="min-h-[3.5rem] px-4 pt-1 text-body-lg font-semibold leading-snug text-primary">
         {caption}
       </p>
 
@@ -160,7 +160,7 @@ function ExerciseAvatar({ exercise, step = null, onStep, prefs, setPrefs, classN
         {webgl ? (
           <CanvasBoundary fallback={unavailable}>
             <Suspense
-              fallback={<div className="absolute inset-0 flex items-center justify-center text-lg text-slate-500">{t('avatar.loading')}</div>}
+              fallback={<div className="absolute inset-0 flex items-center justify-center text-body-lg text-on-surface-variant">{t('avatar.loading')}</div>}
             >
               <div className="absolute inset-0">
                 <AvatarCanvas
@@ -179,7 +179,7 @@ function ExerciseAvatar({ exercise, step = null, onStep, prefs, setPrefs, classN
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5 border-t border-slate-200 p-2.5">
+      <div className="flex flex-wrap items-center gap-1.5 border-t border-outline-variant/60 p-2.5">
         <button type="button" className="btn-primary px-3 py-1.5 text-base" onClick={player.toggle} aria-pressed={ui.playing}>
           {ui.playing ? `❚❚ ${t('avatar.pause')}` : `▶ ${t('avatar.play')}`}
         </button>

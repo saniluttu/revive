@@ -6,7 +6,7 @@ export function ReadAloudToggle() {
   const { t } = useTranslation()
   const [on, setOn] = useReadAloud()
   return (
-    <label className="inline-flex cursor-pointer items-center gap-3 text-lg font-semibold">
+    <label className="inline-flex cursor-pointer items-center gap-3 text-body-lg font-semibold">
       <input type="checkbox" className="h-6 w-6 accent-brand-600" checked={on} onChange={(e) => setOn(e.target.checked)} />
       {t('voice.instructions.readAloud')}
     </label>
@@ -23,12 +23,12 @@ export default function InstructionSteps({ exercise, player, className = '' }) {
   const { t } = useTranslation()
   const ex = `exercises.${exercise.id}`
   const { state, step, play, pause, resume, stop } = player
-  const highlight = (active) => (active ? 'rounded-xl bg-brand-100 font-semibold text-brand-800' : '')
+  const highlight = (active) => (active ? 'rounded-xl bg-primary-fixed/50 font-semibold text-primary' : '')
 
   return (
     <div className={`space-y-3 ${className}`}>
-      <p className={`px-2 py-1 text-lg text-slate-600 transition ${highlight(step === -1)}`}>{t(`${ex}.setup`)}</p>
-      <ol className="list-decimal space-y-1 pl-8 text-lg">
+      <p className={`px-2 py-1 text-body-lg text-on-surface-variant transition ${highlight(step === -1)}`}>{t(`${ex}.setup`)}</p>
+      <ol className="list-decimal space-y-1 pl-8 text-body-lg">
         {t(`${ex}.steps`, { returnObjects: true }).map((s, i) => (
           <li key={s} className={`px-2 py-1 transition ${highlight(step === i)}`} aria-current={step === i ? 'step' : undefined}>
             {s}

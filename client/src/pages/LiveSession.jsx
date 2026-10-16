@@ -24,21 +24,21 @@ const UI_INTERVAL_MS = 100 // push counter state to React at ~10 Hz
 const BANNER_STYLE = {
   error: 'bg-red-600 text-white',
   warn: 'bg-amber-400 text-amber-950',
-  good: 'bg-brand-600 text-white',
-  info: 'bg-slate-800 text-white',
+  good: 'bg-primary text-white',
+  info: 'bg-on-surface text-white',
 }
 
 function qualityColor(q) {
-  if (q == null) return 'text-slate-400'
-  if (q >= 80) return 'text-brand-700'
+  if (q == null) return 'text-outline-variant'
+  if (q >= 80) return 'text-primary'
   if (q >= 50) return 'text-amber-600'
   return 'text-red-600'
 }
 
 function StatTile({ label, children, className = '' }) {
   return (
-    <div className="rounded-3xl bg-white p-4 text-center shadow-sm ring-1 ring-slate-200">
-      <div className="text-base font-semibold uppercase tracking-wide text-slate-500">{label}</div>
+    <div className="rounded-xl bg-surface-container-lowest p-4 text-center shadow-soft ring-1 ring-outline-variant/40">
+      <div className="text-base font-semibold uppercase tracking-wide text-on-surface-variant">{label}</div>
       <div className={`mt-1 text-5xl font-extrabold tabular-nums sm:text-6xl ${className}`}>{children}</div>
     </div>
   )
@@ -50,19 +50,19 @@ function RangeMeter({ exercise, value }) {
   const pct = (v) => `${Math.min(100, Math.max(0, ((v - lo) / (hi - lo)) * 100))}%`
   const reached = value != null && value >= exercise.target
   return (
-    <div className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-      <div className="flex justify-between text-base font-semibold text-slate-600">
+    <div className="rounded-xl bg-surface-container-lowest p-4 shadow-soft ring-1 ring-outline-variant/40">
+      <div className="flex justify-between text-base font-semibold text-on-surface-variant">
         <span>{t(`exercises.${exercise.id}.metricLabel`)}</span>
         <span className="tabular-nums">{value == null ? t('common.dash') : `${Math.round(value)}${exercise.unit}`}</span>
       </div>
-      <div className="relative mt-2 h-6 overflow-hidden rounded-full bg-slate-100">
+      <div className="relative mt-2 h-6 overflow-hidden rounded-full bg-surface-container">
         <div
           className={`absolute inset-y-0 left-0 rounded-full transition-[width] duration-100 ${reached ? 'bg-brand-500' : 'bg-sky-500'}`}
           style={{ width: value == null ? 0 : pct(value) }}
         />
         <div className="absolute inset-y-0 w-1 bg-slate-900" style={{ left: pct(exercise.target) }} title={t('session.target')} />
       </div>
-      <div className="mt-1 text-sm text-slate-500">{t('session.targetHint')}</div>
+      <div className="mt-1 text-sm text-on-surface-variant">{t('session.targetHint')}</div>
     </div>
   )
 }
@@ -78,8 +78,8 @@ function YourPlan() {
   if (!exercises.length) return null
   return (
     <div className="space-y-3">
-      <h2 className="text-2xl font-bold">{t('review.yourPlan')}</h2>
-      <p className="text-lg text-slate-600">{t(approved ? 'review.yourPlanApproved' : 'review.pendingText')}</p>
+      <h2 className="text-headline-md">{t('review.yourPlan')}</h2>
+      <p className="text-body-lg text-on-surface-variant">{t(approved ? 'review.yourPlanApproved' : 'review.pendingText')}</p>
       <PlanExerciseList exercises={exercises} reviewId={review.id} locked={!approved} />
     </div>
   )
@@ -89,8 +89,8 @@ function PlanLocked() {
   const { t } = useTranslation()
   return (
     <div className="card space-y-3 bg-amber-50 ring-amber-200">
-      <h2 className="text-2xl font-bold text-amber-950">{t('review.lockedTitle')}</h2>
-      <p className="text-lg text-amber-950">{t('review.lockedLong')}</p>
+      <h2 className="text-headline-md text-amber-950">{t('review.lockedTitle')}</h2>
+      <p className="text-body-lg text-amber-950">{t('review.lockedLong')}</p>
       <div className="flex flex-wrap gap-3">
         <Link to="/home" className="btn-secondary">
           {t('review.seeStatus')}
@@ -109,19 +109,19 @@ function ExercisePicker() {
     <div className="space-y-6">
       <YourPlan />
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">{t('review.allExercises')}</h2>
-        <p className="text-xl text-slate-600">{t('session.pickExercise')}</p>
+        <h2 className="text-headline-md">{t('review.allExercises')}</h2>
+        <p className="text-body-xl text-on-surface-variant">{t('session.pickExercise')}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           {EXERCISES.map((e) => (
-            <Link key={e.id} to={`?exercise=${e.id}`} className="card block transition hover:ring-brand-500">
-              <div className="text-2xl font-bold">{t(`exercises.${e.id}.name`)}</div>
-              <div className="mt-1 text-lg text-slate-600">
+            <Link key={e.id} to={`?exercise=${e.id}`} className="card block transition hover:ring-primary">
+              <div className="text-headline-md">{t(`exercises.${e.id}.name`)}</div>
+              <div className="mt-1 text-body-lg text-on-surface-variant">
                 {t('session.repsSetsDifficulty', { reps: e.reps, sets: e.sets, difficulty: t(`difficulty.${e.difficulty}`) })}
               </div>
             </Link>
           ))}
         </div>
-        <Link to="/exercises" className="inline-block text-lg font-semibold text-brand-700 underline">
+        <Link to="/exercises" className="inline-block text-body-lg font-semibold text-primary underline">
           {t('session.browse')}
         </Link>
       </div>
@@ -141,11 +141,11 @@ function SessionDone({ snap, onRestart, saveState }) {
   return (
     <div className="card space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="text-3xl font-bold text-brand-800">{t('session.wellDone')}</h2>
+        <h2 className="text-3xl font-bold text-primary">{t('session.wellDone')}</h2>
         {saveState && (
           <span
             role="status"
-            className={`text-lg font-semibold ${saveState === 'failed' ? 'text-red-700' : 'text-slate-500'}`}
+            className={`text-body-lg font-semibold ${saveState === 'failed' ? 'text-error' : 'text-on-surface-variant'}`}
           >
             {t(SAVE_TEXT[saveState])}
           </span>
@@ -159,12 +159,12 @@ function SessionDone({ snap, onRestart, saveState }) {
         </StatTile>
       </div>
       {notCounted > 0 && (
-        <p className="text-lg font-semibold text-red-700">{t('session.notCountedSummary', { count: notCounted })}</p>
+        <p className="text-body-lg font-semibold text-error">{t('session.notCountedSummary', { count: notCounted })}</p>
       )}
       {Object.keys(faultCounts).length > 0 && (
-        <div className="text-lg">
+        <div className="text-body-lg">
           <div className="font-semibold">{t('session.workOn')}</div>
-          <ul className="list-disc pl-6 text-slate-700">
+          <ul className="list-disc pl-6 text-on-surface-variant">
             {Object.entries(faultCounts).map(([id, n]) => (
               <li key={id}>{t('session.faultCount', { message: t(`rules.${id}`), count: n })}</li>
             ))}
@@ -311,15 +311,15 @@ export default function LiveSession() {
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-3xl font-bold sm:text-4xl">{exercise ? t(`exercises.${exercise.id}.name`) : t('session.title')}</h1>
+          <h1 className="page-title">{exercise ? t(`exercises.${exercise.id}.name`) : t('session.title')}</h1>
           {planReviewer && (
-            <p className="mt-1 text-lg font-semibold text-brand-700">
+            <p className="mt-1 text-body-lg font-semibold text-primary">
               {t('review.fromPlan', { name: doctorName(t, planReviewer.name) })}
             </p>
           )}
           {exercise && (
             <select
-              className="mt-2 max-w-full rounded-xl border-2 border-slate-300 bg-white px-3 py-2 text-lg"
+              className="mt-2 max-w-full rounded-xl border-2 border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-lg"
               value={exercise.id}
               onChange={(e) => setParams({ exercise: e.target.value })}
               aria-label={t('session.exercise')}
@@ -351,7 +351,7 @@ export default function LiveSession() {
       </div>
 
       {error && (
-        <div role="alert" className="rounded-2xl bg-red-50 p-4 text-lg font-semibold text-red-800 ring-1 ring-red-200">
+        <div role="alert" className="rounded-xl bg-red-50 p-4 text-body-lg font-semibold text-error ring-1 ring-red-200">
           {tm(error)}
         </div>
       )}
@@ -360,15 +360,15 @@ export default function LiveSession() {
       {!exercise && !planLocked && !planLoading && <ExercisePicker />}
 
       {exercise && snap && instructions.step != null && (
-        <div role="status" aria-live="polite" className={`space-y-2 rounded-3xl px-5 py-4 shadow ${BANNER_STYLE.info}`}>
-          <div className="text-2xl font-bold sm:text-4xl">
+        <div role="status" aria-live="polite" className={`space-y-2 rounded-xl px-5 py-4 shadow-soft ${BANNER_STYLE.info}`}>
+          <div className="text-headline-md sm:text-4xl">
             {instructions.step === -1
               ? t(`exercises.${exercise.id}.setup`)
               : t(`exercises.${exercise.id}.steps`, { returnObjects: true })[instructions.step]}
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="text-lg text-slate-200">{t('voice.instructions.listenFirst')}</span>
-            <button type="button" className="btn bg-white px-4 py-2 text-slate-900 hover:bg-slate-100" onClick={instructions.stop}>
+            <span className="text-body-lg text-slate-200">{t('voice.instructions.listenFirst')}</span>
+            <button type="button" className="btn bg-surface-container-lowest px-4 py-2 text-on-surface hover:bg-surface-container" onClick={instructions.stop}>
               {t('voice.instructions.stop')}
             </button>
           </div>
@@ -379,20 +379,20 @@ export default function LiveSession() {
         <div
           role="status"
           aria-live="polite"
-          className={`flex flex-wrap items-center justify-between gap-3 rounded-3xl px-5 py-4 shadow ${
+          className={`flex flex-wrap items-center justify-between gap-3 rounded-xl px-5 py-4 shadow-soft ${
             BANNER_STYLE[running ? snap.correction.kind : 'info']
           }`}
         >
-          <span className="text-2xl font-bold sm:text-4xl">
+          <span className="text-headline-md sm:text-4xl">
             {running ? tm(snap.correction) : t('session.pressStart', { setup: t(`exercises.${exercise.id}.setup`) })}
             {snap.status === 'rest' && (
-              <span className="mt-1 block text-xl font-semibold sm:text-2xl">
+              <span className="mt-1 block text-body-xl font-semibold sm:text-2xl">
                 {t('voice.instructions.tip', { tip: t(`exercises.${exercise.id}.tip`) })}
               </span>
             )}
           </span>
           {snap.status === 'rest' && (
-            <button type="button" className="btn bg-white px-4 py-2 text-brand-800 hover:bg-brand-50" onClick={skipRest}>
+            <button type="button" className="btn bg-surface-container-lowest px-4 py-2 text-primary hover:bg-surface-container-low" onClick={skipRest}>
               {t('session.nextSetNow')}
             </button>
           )}
@@ -406,31 +406,31 @@ export default function LiveSession() {
         {exercise && (
           <AvatarPanel exercise={exercise} step={instructions.step} defaultMirrored className="order-2 lg:order-none" />
         )}
-        <div className="relative aspect-video overflow-hidden rounded-3xl bg-slate-900 lg:col-span-2">
+        <div className="relative aspect-video overflow-hidden rounded-xl bg-slate-900 lg:col-span-2">
           {/* Mirrored so movement feels natural, like a mirror */}
           <video ref={videoRef} className="absolute inset-0 h-full w-full -scale-x-100 object-cover" playsInline muted />
           <canvas ref={canvasRef} className="absolute inset-0 h-full w-full -scale-x-100 object-cover" />
 
           {!running && (
-            <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-xl text-slate-300">
+            <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-body-xl text-slate-300">
               {status === 'loading' ? t('session.loadingModel') : t('session.pressStartShort')}
             </div>
           )}
 
           {running && framingWarning && (
-            <div className="absolute inset-x-3 top-3 rounded-2xl bg-amber-400 px-4 py-3 text-center text-xl font-bold text-amber-950 shadow-lg">
+            <div className="absolute inset-x-3 top-3 rounded-xl bg-amber-400 px-4 py-3 text-center text-label-lg text-amber-950 shadow-lg">
               {t('session.framing')}
             </div>
           )}
 
           {running && exercise && snap?.status === 'calibrating' && (
             <div className="absolute inset-x-6 bottom-6 h-3 overflow-hidden rounded-full bg-white/30">
-              <div className="h-full bg-white" style={{ width: `${snap.calibrationProgress * 100}%` }} />
+              <div className="h-full bg-surface-container-lowest" style={{ width: `${snap.calibrationProgress * 100}%` }} />
             </div>
           )}
 
           {running && exercise && snap?.viewMismatch && !framingWarning && (
-            <div className="absolute inset-x-3 bottom-3 rounded-2xl bg-black/70 px-4 py-2 text-center text-lg text-white">
+            <div className="absolute inset-x-3 bottom-3 rounded-xl bg-black/70 px-4 py-2 text-center text-body-lg text-white">
               {t(exercise.view === 'side' ? 'session.tipSide' : 'session.tipFront')}
             </div>
           )}
@@ -445,17 +445,17 @@ export default function LiveSession() {
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-1">
               <StatTile label={t('session.reps')}>
                 {snap.reps}
-                <span className="text-3xl text-slate-400">/{snap.targetReps}</span>
+                <span className="text-3xl text-outline-variant">/{snap.targetReps}</span>
               </StatTile>
               <StatTile label={t('session.set')}>
                 {snap.set}
-                <span className="text-3xl text-slate-400">/{snap.sets}</span>
+                <span className="text-3xl text-outline-variant">/{snap.sets}</span>
               </StatTile>
             </div>
             <StatTile label={t('session.lastQuality')} className={qualityColor(snap.lastRep?.quality)}>
               {snap.lastRep?.quality ?? t('common.dash')}
               {snap.setAverage != null && (
-                <span className="mt-1 block text-lg font-semibold text-slate-500">
+                <span className="mt-1 block text-body-lg font-semibold text-on-surface-variant">
                   {t('session.setAverage', { avg: snap.setAverage })}
                 </span>
               )}
@@ -470,14 +470,14 @@ export default function LiveSession() {
       {exercise && (
         <div className="grid gap-4 md:grid-cols-2">
           <div className="card">
-            <h2 className="mb-2 text-2xl font-bold">{t('session.howTo')}</h2>
+            <h2 className="mb-2 text-headline-md">{t('session.howTo')}</h2>
             <InstructionSteps exercise={exercise} player={instructions} />
             <div className="mt-3">
               <ReadAloudToggle />
             </div>
           </div>
           <div className="card">
-            <h2 className="mb-3 text-2xl font-bold">{t('session.repsSoFar')}</h2>
+            <h2 className="mb-3 text-headline-md">{t('session.repsSoFar')}</h2>
             {snap?.history.length ? (
               <div className="flex flex-wrap gap-2">
                 {snap.history.map((r, i) =>
@@ -485,32 +485,32 @@ export default function LiveSession() {
                     <span
                       key={i}
                       title={r.faults.map((f) => t(`rules.${f}`)).join(', ') || t('session.goodForm')}
-                      className={`rounded-xl px-3 py-2 text-lg font-bold ring-1 ring-slate-200 ${qualityColor(r.quality)}`}
+                      className={`rounded-xl px-3 py-2 text-body-lg font-bold ring-1 ring-outline-variant/40 ${qualityColor(r.quality)}`}
                     >
                       {r.set}.{r.rep}: {r.quality}
                       {r.faults.length > 0 && ' ⚠'}
                     </span>
                   ) : (
-                    <span key={i} className="rounded-xl bg-red-50 px-3 py-2 text-lg font-semibold text-red-800 ring-1 ring-red-200">
+                    <span key={i} className="rounded-xl bg-red-50 px-3 py-2 text-body-lg font-semibold text-error ring-1 ring-red-200">
                       {t('session.notCounted', { reason: t(`rules.${r.reason}`) })}
                     </span>
                   ),
                 )}
               </div>
             ) : (
-              <p className="text-lg text-slate-500">{t('session.noReps')}</p>
+              <p className="text-body-lg text-on-surface-variant">{t('session.noReps')}</p>
             )}
           </div>
         </div>
       )}
 
       <details className="card">
-        <summary className="cursor-pointer text-xl font-bold">{t('session.jointAngles')}</summary>
+        <summary className="cursor-pointer text-label-lg">{t('session.jointAngles')}</summary>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {JOINTS.map((j) => (
-            <div key={j.key} className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
-              <div className="text-base font-semibold text-slate-600">{t(`joints.${j.key}`)}</div>
-              <div className="text-2xl font-bold tabular-nums">
+            <div key={j.key} className="rounded-xl bg-surface-container-low p-3 ring-1 ring-outline-variant/40">
+              <div className="text-base font-semibold text-on-surface-variant">{t(`joints.${j.key}`)}</div>
+              <div className="text-headline-md tabular-nums">
                 {angles[j.key] == null ? t('common.dash') : `${Math.round(angles[j.key])}°`}
               </div>
             </div>
