@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
 import useAuth from '../auth/useAuth.js'
+import AvatarPanel from '../avatar/AvatarPanel.jsx'
 import { EXERCISES } from '../exercises/library.js'
 import { createRepCounter } from '../exercises/repCounter.js'
 import useMessage from '../i18n/useMessage.js'
@@ -395,7 +396,11 @@ export default function LiveSession() {
 
       {exercise && snap?.status === 'done' && <SessionDone snap={snap} onRestart={resetCounter} saveState={saveState} />}
 
-      <div className={`grid gap-4 ${exercise ? 'lg:grid-cols-3' : ''}`}>
+      <div className={`grid items-start gap-4 ${exercise ? 'lg:grid-cols-4' : ''}`}>
+        {/* 3D demonstration on the left (below the camera on small screens), mirrored like the video */}
+        {exercise && (
+          <AvatarPanel exercise={exercise} step={instructions.step} defaultMirrored className="order-2 lg:order-none" />
+        )}
         <div className="relative aspect-video overflow-hidden rounded-3xl bg-slate-900 lg:col-span-2">
           {/* Mirrored so movement feels natural, like a mirror */}
           <video ref={videoRef} className="absolute inset-0 h-full w-full -scale-x-100 object-cover" playsInline muted />
@@ -431,7 +436,7 @@ export default function LiveSession() {
         </div>
 
         {exercise && snap && (
-          <div className="grid content-start gap-4">
+          <div className="order-3 grid content-start gap-4 lg:order-none">
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-1">
               <StatTile label={t('session.reps')}>
                 {snap.reps}
@@ -465,7 +470,6 @@ export default function LiveSession() {
             <div className="mt-3">
               <ReadAloudToggle />
             </div>
-            <p className="mt-3 text-base text-slate-400">{t('session.avatarSoon')}</p>
           </div>
           <div className="card">
             <h2 className="mb-3 text-2xl font-bold">{t('session.repsSoFar')}</h2>
