@@ -17,6 +17,7 @@ const NAV_BY_ROLE = {
     // /reminders and /prescription still have routes but are hidden for the demo (parked)
   ],
   [ROLES.CAREGIVER]: [{ to: '/caregiver', label: 'nav.caregiver' }],
+  [ROLES.PHYSIO]: [{ to: '/reviews', label: 'nav.reviews' }],
 }
 const LOGGED_OUT_NAV = [{ to: '/login', label: 'nav.login' }]
 

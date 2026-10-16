@@ -1,6 +1,9 @@
 import { Trans, useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
+import useAuth from '../auth/useAuth.js'
 import { BODY_PARTS, exercisesFor } from '../exercises/library.js'
+import useReviews from '../reviews/useReviews.js'
+import { latestReviewFor, REVIEW_STATUS } from '../services/reviewService.js'
 
 const DIFFICULTY_STYLE = {
   easy: 'bg-brand-100 text-brand-800',
@@ -51,6 +54,8 @@ export default function ExerciseSelect() {
   const [params, setParams] = useSearchParams()
   const partId = params.get('part')
   const part = BODY_PARTS.find((p) => p.id === partId && p.available)
+  const { user } = useAuth()
+  const hasApprovedPlan = latestReviewFor(user.uid, useReviews())?.status === REVIEW_STATUS.APPROVED
 
   return (
     <section className="space-y-6">
@@ -58,6 +63,15 @@ export default function ExerciseSelect() {
         <h1 className="text-3xl font-bold sm:text-4xl">{t('exerciseSelect.title')}</h1>
         <p className="mt-1 text-xl text-slate-600">{t('exerciseSelect.subtitle')}</p>
       </div>
+
+      {!hasApprovedPlan && (
+        <p role="note" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl bg-sky-50 p-4 text-lg text-sky-950 ring-1 ring-sky-200">
+          <span className="font-semibold">{t('review.recommended')}</span>
+          <Link to="/report" className="font-semibold text-brand-700 underline">
+            {t('review.recommendedLink')}
+          </Link>
+        </p>
+      )}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {BODY_PARTS.map((p) => {

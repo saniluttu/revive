@@ -1,6 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import useAuth from '../auth/useAuth.js'
+import PlanStatus from '../reviews/PlanStatus.jsx'
+import useReviews from '../reviews/useReviews.js'
+import { latestReviewFor } from '../services/reviewService.js'
 
 const ACTIONS = [
   { to: '/session', title: 'home.startTitle', text: 'home.startText' },
@@ -13,6 +16,7 @@ export default function PatientHome() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const name = user?.profile?.name
+  const review = latestReviewFor(user.uid, useReviews())
 
   return (
     <section className="space-y-6">
@@ -25,6 +29,8 @@ export default function PatientHome() {
           {t('home.editProfile')}
         </Link>
       </div>
+
+      {review && <PlanStatus review={review} />}
 
       <div className="grid gap-4 sm:grid-cols-2">
         {ACTIONS.map((a, i) => (

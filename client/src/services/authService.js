@@ -11,11 +11,14 @@
 export const ROLES = {
   PATIENT: 'patient',
   CAREGIVER: 'caregiver',
+  PHYSIO: 'physiotherapist',
 }
 
 /**
  * @typedef {{ name: string, age: number, gender: string, language: 'ml' | 'en' }} Profile
- * @typedef {{ uid: string, email: string, role: 'patient' | 'caregiver', profile: Profile | null, createdAt: string }} User
+ * @typedef {{ name: string, registrationNumber: string, clinic: string }} PhysioProfile
+ * @typedef {{ uid: string, email: string, role: 'patient' | 'caregiver' | 'physiotherapist',
+ *             profile: Profile | PhysioProfile | null, createdAt: string }} User
  */
 
 const USERS_KEY = 'revive.users' // { [email]: { ...User, password } }
@@ -73,17 +76,31 @@ window.addEventListener('storage', (e) => {
   if (e.key === SESSION_KEY || e.key === USERS_KEY) setState({ user: readSessionUser(), loading: false })
 })
 
-/** @returns {Promise<User>} */
-export async function signUp({ email, password, role }) {
+/**
+ * Physiotherapists give their details at signup: `physio` = { name, registrationNumber, clinic }.
+ * Other roles set up their profile afterwards.
+ * @returns {Promise<User>}
+ */
+export async function signUp({ email, password, role, physio }) {
   email = normaliseEmail(email)
   if (!/^\S+@\S+\.\S+$/.test(email)) throw authError('invalidEmail')
   if (!password || password.length < 6) throw authError('weakPassword')
   if (!Object.values(ROLES).includes(role)) throw authError('invalidRole')
 
+  let profile = null
+  if (role === ROLES.PHYSIO) {
+    profile = {
+      name: String(physio?.name ?? '').trim(),
+      registrationNumber: String(physio?.registrationNumber ?? '').trim(),
+      clinic: String(physio?.clinic ?? '').trim(),
+    }
+    if (!profile.name || !profile.registrationNumber || !profile.clinic) throw authError('physioDetailsRequired')
+  }
+
   const users = readUsers()
   if (users[email]) throw authError('emailInUse')
 
-  const record = { uid: newUid(), email, password, role, profile: null, createdAt: new Date().toISOString() }
+  const record = { uid: newUid(), email, password, role, profile, createdAt: new Date().toISOString() }
   users[email] = record
   writeUsers(users)
   localStorage.setItem(SESSION_KEY, record.uid)
@@ -140,5 +157,6 @@ export function onAuthStateChanged(callback) {
 export function homePathFor(user) {
   if (!user) return '/login'
   if (user.role === ROLES.CAREGIVER) return '/caregiver'
+  if (user.role === ROLES.PHYSIO) return '/reviews'
   return user.profile ? '/home' : '/profile'
 }

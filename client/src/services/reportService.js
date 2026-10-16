@@ -90,7 +90,7 @@ async function postReport(payload, onRetry) {
 /**
  * @param {File} file PDF or image of the written report
  * @param {{ onRetry?: () => void }} [options] called whenever the AI (or the connection) is being retried
- * @returns {Promise<{ analysis: object, provider: string, cached?: boolean, fileName: string }>}
+ * @returns {Promise<{ id: string, analysis: object, provider: string, cached?: boolean, fileName: string }>}
  */
 export async function analyzeReport(file, { onRetry = () => {} } = {}) {
   if (!REPORT_TYPES.includes(file.type)) throw new ReportError('unsupported_file')
@@ -115,7 +115,13 @@ export async function analyzeReport(file, { onRetry = () => {} } = {}) {
     }
   }
 
-  const result = { analysis: body.analysis, provider: body.provider, cached: Boolean(body.cached), fileName: file.name }
+  const result = {
+    id: crypto.randomUUID?.() ?? `rep_${Date.now().toString(36)}`, // links a physiotherapist review to this analysis
+    analysis: body.analysis,
+    provider: body.provider,
+    cached: Boolean(body.cached),
+    fileName: file.name,
+  }
   try {
     sessionStorage.setItem(RESULT_KEY, JSON.stringify(result))
   } catch {

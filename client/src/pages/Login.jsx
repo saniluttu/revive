@@ -7,6 +7,13 @@ import { homePathFor, logIn, ROLES, signUp } from '../services/authService.js'
 const ROLE_OPTIONS = [
   { value: ROLES.PATIENT, label: 'login.patient', hint: 'login.patientHint' },
   { value: ROLES.CAREGIVER, label: 'login.caregiver', hint: 'login.caregiverHint' },
+  { value: ROLES.PHYSIO, label: 'login.physio', hint: 'login.physioHint' },
+]
+
+const PHYSIO_FIELDS = [
+  { name: 'name', label: 'login.physioName', autoComplete: 'name' },
+  { name: 'registrationNumber', label: 'login.registrationNumber', autoComplete: 'off' },
+  { name: 'clinic', label: 'login.clinic', autoComplete: 'organization' },
 ]
 
 export default function Login() {
@@ -17,6 +24,7 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState(ROLES.PATIENT)
+  const [physio, setPhysio] = useState({ name: '', registrationNumber: '', clinic: '' })
   const [error, setError] = useState(null) // error code → errors.<code>
   const [busy, setBusy] = useState(false)
 
@@ -29,7 +37,7 @@ export default function Login() {
     setError(null)
     setBusy(true)
     try {
-      const u = isSignup ? await signUp({ email, password, role }) : await logIn({ email, password })
+      const u = isSignup ? await signUp({ email, password, role, physio }) : await logIn({ email, password })
       navigate(homePathFor(u), { replace: true })
     } catch (err) {
       setError(err.code ?? 'unknown')
@@ -75,11 +83,11 @@ export default function Login() {
           {isSignup && (
             <fieldset>
               <legend className="mb-2 text-lg font-semibold">{t('login.iAm')}</legend>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-3">
                 {ROLE_OPTIONS.map((r) => (
                   <label
                     key={r.value}
-                    className={`cursor-pointer rounded-2xl border-2 p-4 transition ${
+                    className={`cursor-pointer rounded-2xl border-2 px-4 py-3 transition ${
                       role === r.value ? 'border-brand-600 bg-brand-50' : 'border-slate-200 hover:border-slate-300'
                     }`}
                   >
@@ -97,6 +105,23 @@ export default function Login() {
                 ))}
               </div>
             </fieldset>
+          )}
+
+          {isSignup && role === ROLES.PHYSIO && (
+            <div className="space-y-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              {PHYSIO_FIELDS.map((f) => (
+                <label key={f.name} className="block">
+                  <span className="mb-1 block text-lg font-semibold">{t(f.label)}</span>
+                  <input
+                    className="input"
+                    autoComplete={f.autoComplete}
+                    value={physio[f.name]}
+                    onChange={(e) => setPhysio((p) => ({ ...p, [f.name]: e.target.value }))}
+                    required
+                  />
+                </label>
+              ))}
+            </div>
           )}
 
           <label className="block">

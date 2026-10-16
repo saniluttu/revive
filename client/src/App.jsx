@@ -14,6 +14,8 @@ import Progress from './pages/Progress.jsx'
 import Reminders from './pages/Reminders.jsx'
 import ReportResults from './pages/ReportResults.jsx'
 import ReportUpload from './pages/ReportUpload.jsx'
+import ReviewDetail from './pages/ReviewDetail.jsx'
+import ReviewRequests from './pages/ReviewRequests.jsx'
 import SessionSummary from './pages/SessionSummary.jsx'
 import { homePathFor, ROLES } from './services/authService.js'
 
@@ -46,6 +48,11 @@ export default function App() {
 
         <Route element={<RequireRole role={ROLES.CAREGIVER} />}>
           <Route path="/caregiver" element={<CaregiverDashboard />} />
+        </Route>
+
+        <Route element={<RequireRole role={ROLES.PHYSIO} />}>
+          <Route path="/reviews" element={<ReviewRequests />} />
+          <Route path="/reviews/:id" element={<ReviewDetail />} />
         </Route>
 
         <Route path="*" element={<HomeRedirect />} />

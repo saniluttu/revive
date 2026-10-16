@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
-import { EXERCISES, getExercise } from '../exercises/library.js'
+import useAuth from '../auth/useAuth.js'
+import { EXERCISES } from '../exercises/library.js'
 import { createRepCounter } from '../exercises/repCounter.js'
 import useMessage from '../i18n/useMessage.js'
 import { JOINTS } from '../pose/angles.js'
 import usePoseTracker from '../pose/usePoseTracker.js'
+import { doctorName, planExercises } from '../reviews/plan.js'
+import { PlanExerciseList } from '../reviews/PlanStatus.jsx'
+import useReviews, { useSessionExercise } from '../reviews/useReviews.js'
+import { latestReviewFor, REVIEW_STATUS } from '../services/reviewService.js'
 
 const UI_INTERVAL_MS = 100 // push counter state to React at ~10 Hz
 
@@ -55,24 +60,64 @@ function RangeMeter({ exercise, value }) {
   )
 }
 
+// The AI plan from the latest report: locked while the review is pending, startable once approved
+function YourPlan() {
+  const { t } = useTranslation()
+  const { user } = useAuth()
+  const review = latestReviewFor(user.uid, useReviews())
+  if (!review || review.status === REVIEW_STATUS.REJECTED) return null
+  const approved = review.status === REVIEW_STATUS.APPROVED
+  const exercises = planExercises(approved ? review.plan : review.aiPlan)
+  if (!exercises.length) return null
+  return (
+    <div className="space-y-3">
+      <h2 className="text-2xl font-bold">{t('review.yourPlan')}</h2>
+      <p className="text-lg text-slate-600">{t(approved ? 'review.yourPlanApproved' : 'review.pendingText')}</p>
+      <PlanExerciseList exercises={exercises} reviewId={review.id} locked={!approved} />
+    </div>
+  )
+}
+
+function PlanLocked() {
+  const { t } = useTranslation()
+  return (
+    <div className="card space-y-3 bg-amber-50 ring-amber-200">
+      <h2 className="text-2xl font-bold text-amber-950">{t('review.lockedTitle')}</h2>
+      <p className="text-lg text-amber-950">{t('review.lockedLong')}</p>
+      <div className="flex flex-wrap gap-3">
+        <Link to="/home" className="btn-secondary">
+          {t('review.seeStatus')}
+        </Link>
+        <Link to="/exercises" className="btn-secondary">
+          {t('review.chooseManually')}
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 function ExercisePicker() {
   const { t } = useTranslation()
   return (
-    <div className="space-y-4">
-      <p className="text-xl text-slate-600">{t('session.pickExercise')}</p>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {EXERCISES.map((e) => (
-          <Link key={e.id} to={`?exercise=${e.id}`} className="card block transition hover:ring-brand-500">
-            <div className="text-2xl font-bold">{t(`exercises.${e.id}.name`)}</div>
-            <div className="mt-1 text-lg text-slate-600">
-              {t('session.repsSetsDifficulty', { reps: e.reps, sets: e.sets, difficulty: t(`difficulty.${e.difficulty}`) })}
-            </div>
-          </Link>
-        ))}
+    <div className="space-y-6">
+      <YourPlan />
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold">{t('review.allExercises')}</h2>
+        <p className="text-xl text-slate-600">{t('session.pickExercise')}</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {EXERCISES.map((e) => (
+            <Link key={e.id} to={`?exercise=${e.id}`} className="card block transition hover:ring-brand-500">
+              <div className="text-2xl font-bold">{t(`exercises.${e.id}.name`)}</div>
+              <div className="mt-1 text-lg text-slate-600">
+                {t('session.repsSetsDifficulty', { reps: e.reps, sets: e.sets, difficulty: t(`difficulty.${e.difficulty}`) })}
+              </div>
+            </Link>
+          ))}
+        </div>
+        <Link to="/exercises" className="inline-block text-lg font-semibold text-brand-700 underline">
+          {t('session.browse')}
+        </Link>
       </div>
-      <Link to="/exercises" className="inline-block text-lg font-semibold text-brand-700 underline">
-        {t('session.browse')}
-      </Link>
     </div>
   )
 }
@@ -123,7 +168,7 @@ export default function LiveSession() {
   const { t } = useTranslation()
   const tm = useMessage()
   const [params, setParams] = useSearchParams()
-  const exercise = getExercise(params.get('exercise'))
+  const { exercise, planLocked, planReviewer } = useSessionExercise(params.get('exercise'), params.get('plan'))
 
   const counterRef = useRef(null)
   const lastUiRef = useRef({ time: 0, attempts: 0, status: null })
@@ -162,6 +207,11 @@ export default function LiveSession() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-3xl font-bold sm:text-4xl">{exercise ? t(`exercises.${exercise.id}.name`) : t('session.title')}</h1>
+          {planReviewer && (
+            <p className="mt-1 text-lg font-semibold text-brand-700">
+              {t('review.fromPlan', { name: doctorName(t, planReviewer.name) })}
+            </p>
+          )}
           {exercise && (
             <select
               className="mt-2 max-w-full rounded-xl border-2 border-slate-300 bg-white px-3 py-2 text-lg"
@@ -194,7 +244,8 @@ export default function LiveSession() {
         </div>
       )}
 
-      {!exercise && <ExercisePicker />}
+      {planLocked && <PlanLocked />}
+      {!exercise && !planLocked && <ExercisePicker />}
 
       {exercise && snap && (
         <div

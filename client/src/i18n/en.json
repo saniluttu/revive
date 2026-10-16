@@ -21,7 +21,8 @@
     "login": "Login",
     "logout": "Logout",
     "openMenu": "Open menu",
-    "closeMenu": "Close menu"
+    "closeMenu": "Close menu",
+    "reviews": "Review Requests"
   },
   "common": {
     "comingSoon": "Coming soon.",
@@ -32,11 +33,12 @@
   "errors": {
     "invalidEmail": "Please enter a valid email address.",
     "weakPassword": "Password must be at least 6 characters.",
-    "invalidRole": "Please choose Patient or Caregiver.",
+    "invalidRole": "Please choose Patient, Caregiver or Physiotherapist.",
     "emailInUse": "An account with this email already exists. Please log in.",
     "wrongPassword": "Incorrect email or password.",
     "notLoggedIn": "You are not logged in.",
-    "unknown": "Something went wrong. Please try again."
+    "unknown": "Something went wrong. Please try again.",
+    "physioDetailsRequired": "Please enter your name, registration number and clinic."
   },
   "login": {
     "title": "Welcome to Revive",
@@ -52,7 +54,12 @@
     "password": "Password",
     "passwordHint": "At least 6 characters",
     "createAccount": "Create account",
-    "submit": "Log in"
+    "submit": "Log in",
+    "physio": "Physiotherapist",
+    "physioHint": "I review my patients' exercise plans",
+    "physioName": "Full name",
+    "registrationNumber": "Registration number",
+    "clinic": "Clinic / hospital"
   },
   "profile": {
     "setupTitle": "Set up your profile",
@@ -319,6 +326,85 @@
     "avoid": "Avoid / be careful",
     "chooseManually": "Choose exercises myself",
     "uploadAnother": "Upload another report"
+  },
+  "review": {
+    "doctor": "Dr. {{name}}",
+    "planTitle": "Your exercise plan",
+    "status": {
+      "pending": "Pending review",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "approvedBy": "✓ Approved by {{name}}",
+    "pendingText": "A physiotherapist will check your plan. These exercises unlock once it is approved.",
+    "notesFrom": "Notes from {{name}}",
+    "rejectedText": "{{name}} did not approve this plan.",
+    "reason": "Reason",
+    "uploadAnother": "Upload another report",
+    "chooseManually": "Choose exercises myself",
+    "repsSets": "{{reps}} reps × {{sets}} sets",
+    "start": "Start",
+    "locked": "Locked",
+    "lockedTitle": "This exercise is locked",
+    "lockedLong": "Unlocks after a physiotherapist approves your plan.",
+    "notInPlan": "Not in your approved plan.",
+    "notApproved": "Not approved by your physiotherapist.",
+    "seeStatus": "See plan status",
+    "requestTitle": "Get your plan checked",
+    "requestText": "A registered physiotherapist will check these AI suggestions, change them if needed, and approve your plan.",
+    "requestButton": "Request physiotherapist review — ₹{{price}} (demo)",
+    "confirmTitle": "Confirm your request",
+    "confirmItem": "Physiotherapist review",
+    "demoNotice": "Demo only — no payment is taken and no card details are needed.",
+    "confirmButton": "Confirm request (demo)",
+    "cancel": "Cancel",
+    "recommended": "Recommended: get your plan reviewed by a physiotherapist.",
+    "recommendedLink": "Upload your report",
+    "yourPlan": "Your plan",
+    "yourPlanApproved": "Approved by your physiotherapist. Tap an exercise to start.",
+    "allExercises": "All exercises",
+    "fromPlan": "From your plan · approved by {{name}}",
+    "errors": {
+      "notLoggedIn": "You are not logged in.",
+      "notFound": "This request no longer exists.",
+      "alreadyReviewed": "This request has already been reviewed.",
+      "emptyPlan": "Add at least one exercise before approving.",
+      "reasonRequired": "Please write a reason for the patient.",
+      "unknown": "Something went wrong. Please try again."
+    }
+  },
+  "reviews": {
+    "title": "Review requests",
+    "subtitle": "Patients waiting for you to check their AI-suggested exercise plan.",
+    "pending_one": "{{count}} waiting",
+    "pending_other": "{{count}} waiting",
+    "none": "No requests are waiting right now.",
+    "reviewed": "Reviewed by you",
+    "age": "Age {{age}}",
+    "requested": "Requested {{date}}",
+    "open": "Open",
+    "back": "All requests",
+    "reportSummary": "Report summary",
+    "aiPlan": "AI-suggested exercises",
+    "editPlan": "Edit the plan",
+    "noExercises": "No exercises suggested.",
+    "exercise": "Exercise",
+    "reps": "Reps",
+    "sets": "Sets",
+    "remove": "Remove",
+    "addExercise": "+ Add exercise",
+    "notes": "Notes for the patient (optional)",
+    "notesPlaceholder": "e.g. Go slowly. Stop if the pain gets worse.",
+    "approve": "Approve",
+    "edit": "Edit",
+    "reject": "Reject",
+    "saveApprove": "Save and approve",
+    "cancelEdit": "Cancel changes",
+    "rejectReason": "Reason for the patient",
+    "rejectPlaceholder": "e.g. Please see me in the clinic before starting exercises.",
+    "confirmReject": "Reject plan",
+    "outcome": "Your decision",
+    "reviewedBy": "Reviewed by {{name}} on {{date}}"
   },
   "pages": {
     "progress": {
