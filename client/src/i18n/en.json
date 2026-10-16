@@ -219,14 +219,7 @@
     "backArch": "Don't arch your back — keep it straight",
     "kneesIn": "Push your knees outward, over your toes",
     "leanForward": "Keep your chest up — don't lean forward",
-    "leanBack": "Sit upright — don't lean back",
-    "slowDown": "Slow down — rest your arm, then raise, hold and lower slowly",
-    "tooHigh": "Only up to shoulder height — not higher",
-    "straightArm": "Keep your arm straight — don't bend the elbow",
-    "standStill": "Stand still — keep your hips and feet in place",
-    "sideways": "Raise your arm out to the side, not forward",
-    "smooth": "One smooth movement — no waving or bouncing",
-    "stepBack": "Step back so your whole arm can be seen"
+    "leanBack": "Sit upright — don't lean back"
   },
   "parts": {
     "shoulder": "shoulders",

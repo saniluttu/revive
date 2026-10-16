@@ -9,7 +9,6 @@ const SIDES = {
     ear: LM.LEFT_EAR,
     shoulder: LM.LEFT_SHOULDER,
     elbow: LM.LEFT_ELBOW,
-    wrist: LM.LEFT_WRIST,
     hip: LM.LEFT_HIP,
     knee: LM.LEFT_KNEE,
     ankle: LM.LEFT_ANKLE,
@@ -18,7 +17,6 @@ const SIDES = {
     ear: LM.RIGHT_EAR,
     shoulder: LM.RIGHT_SHOULDER,
     elbow: LM.RIGHT_ELBOW,
-    wrist: LM.RIGHT_WRIST,
     hip: LM.RIGHT_HIP,
     knee: LM.RIGHT_KNEE,
     ankle: LM.RIGHT_ANKLE,
@@ -43,12 +41,7 @@ const avg = (pts) => ({
 /**
  * @returns {null | {
  *   visible: Record<string, boolean>,               // at least one side visible per body part
- *   sides: { left: SideData, right: SideData },     // SideData: { shoulderAngle, elbowAngle, kneeAngle } (deg | null),
- *                                                   //   points: { shoulder, wrist, hip, ankle } ({x, y} px | null),
- *                                                   //   visibility: { shoulder, elbow, wrist, hip } (0–1)
- *   working: 'left' | 'right' | null,               // the side whose arm is raised higher
- *   shoulderWidth: number | null,                   // px between the shoulders
- *   hipMid: {x, y} | null,                          // px
+ *   sides: { left: SideData, right: SideData },     // SideData: { shoulderAngle, kneeAngle } (deg | null)
  *   trunk: null | { tilt: number, lean: number | null, length: number },
  *   view: 'front' | 'side',
  *   earShoulder: { left: number | null, right: number | null }, // vertical ear→shoulder gap / torso length
@@ -74,14 +67,9 @@ export function extractFeatures(landmarks, width, height) {
   for (const [name, s] of Object.entries(SIDES)) {
     sides[name] = {
       shoulderAngle: angle(s.elbow, s.shoulder, s.hip),
-      elbowAngle: angle(s.shoulder, s.elbow, s.wrist),
       kneeAngle: angle(s.hip, s.knee, s.ankle),
-      points: Object.fromEntries(['shoulder', 'wrist', 'hip', 'ankle'].map((part) => [part, vis(s[part]) ? pt(s[part]) : null])),
-      visibility: Object.fromEntries(['shoulder', 'elbow', 'wrist', 'hip'].map((part) => [part, landmarks[s[part]]?.visibility ?? 0])),
     }
   }
-  const angles = ['left', 'right'].filter((side) => sides[side].shoulderAngle != null)
-  const working = angles.length ? angles.reduce((a, b) => (sides[b].shoulderAngle > sides[a].shoulderAngle ? b : a)) : null
 
   // Trunk = line from mid-hip to mid-shoulder
   let trunk = null
@@ -126,9 +114,6 @@ export function extractFeatures(landmarks, width, height) {
   return {
     visible,
     sides,
-    working,
-    shoulderWidth: both('shoulder') ? Math.hypot(pt(SIDES.left.shoulder).x - pt(SIDES.right.shoulder).x, pt(SIDES.left.shoulder).y - pt(SIDES.right.shoulder).y) : null,
-    hipMid: hips.length === 2 ? avg(hips) : null,
     trunk,
     view,
     earShoulder,

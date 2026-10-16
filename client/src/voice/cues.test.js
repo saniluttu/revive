@@ -73,23 +73,6 @@ describe('cuesForUpdate', () => {
     expect(cuesForUpdate(snap(), next)).toEqual({ ids: ['notCounted', 'fix-shrug'], priority: 'high' })
   })
 
-  it('says "not counted" and the reason as soon as a rep in progress is rejected, and not again when it ends', () => {
-    const rejected = snap({ rejected: 'slowDown' })
-    expect(cuesForUpdate(snap(), rejected)).toEqual({ ids: ['notCounted', 'fix-slowDown'], priority: 'high' })
-    expect(cuesForUpdate(rejected, snap({ rejected: 'slowDown' }))).toBeNull()
-    const ended = snap({ attempts: 1, lastAttempt: { counted: false, reason: 'slowDown' } })
-    expect(cuesForUpdate(rejected, ended)).toBeNull()
-  })
-
-  it('has a spoken correction for every strict shoulder abduction cue, in both languages', () => {
-    for (const dict of [en, ml]) {
-      const texts = cueTexts(dict)
-      for (const id of ['slowDown', 'tooHigh', 'straightArm', 'standStill', 'sideways', 'smooth', 'stepBack']) {
-        expect(texts[`fix-${id}`]).toBeTruthy()
-      }
-    }
-  })
-
   it('says a correction once when a wrong movement starts, with low priority', () => {
     const fault = snap({ activeFaults: ['kneesIn'] })
     expect(cuesForUpdate(snap(), fault)).toEqual({ ids: ['fix-kneesIn'], priority: 'low' })

@@ -5,9 +5,6 @@
 // A rep that reached the target is still "not counted" when:
 //   - a `blockAtTarget` fault (e.g. shrug) was active as the target was crossed, or
 //   - the exercise's `mainFault` was held for most of the rep
-// Exercises with a `strict` config (shoulder abduction, see ABDUCTION in library.js)
-// are also checked for: starting from a still rest, tempo, a hold at the top, an
-// upper limit and a single smooth peak; form rules listed in `voidOn` void the rep.
 //
 // Pure JS (no React) so it can be unit-tested with synthetic poses. On-screen
 // text is returned as translatable messages ({ key, values }, see i18n/message.js);
@@ -35,25 +32,8 @@ function median(values) {
   return v.length ? v[Math.floor(v.length / 2)] : null
 }
 
-const medianPoint = (points) => {
-  const x = median(points.map((p) => p?.x))
-  return x == null ? null : { x, y: median(points.map((p) => p?.y)) }
-}
-
 function makeBaseline(samples) {
-  const sidePoint = (side, part) => medianPoint(samples.map((f) => f.sides[side].points[part]))
-  const armLength = (side) =>
-    median(
-      samples.map((f) => {
-        const { shoulder, wrist } = f.sides[side].points
-        return shoulder && wrist ? Math.hypot(wrist.x - shoulder.x, wrist.y - shoulder.y) : null
-      }),
-    )
   return {
-    armLength: { left: armLength('left'), right: armLength('right') },
-    shoulderWidth: median(samples.map((f) => f.shoulderWidth)),
-    hipMid: medianPoint(samples.map((f) => f.hipMid)),
-    ankles: { left: sidePoint('left', 'ankle'), right: sidePoint('right', 'ankle') },
     earShoulder: {
       left: median(samples.map((f) => f.earShoulder.left)),
       right: median(samples.map((f) => f.earShoulder.right)),
@@ -90,13 +70,6 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
   let rep = null // rep in progress
   let restUntil = 0
   let message = null // { message, kind, until }
-  // strict mode: the arm must rest still before a rep can start
-  const strict = exercise.strict ?? null
-  let restAnchor = null // { t, lo, hi } while the arm is down and the angle stays within stillDeg
-  let armed = false // rested long enough for the next rep
-  let lastRestT = 0 // last frame with the arm down
-  let lastReject = null // most recent reason a rep was not counted (debug overlay)
-  let elbow = null // working arm's elbow angle (debug overlay)
   const history = []
   const faultSince = {}
   let activeFaults = []
@@ -105,10 +78,9 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
     message = { ...m, kind, until: t + hold }
   }
 
-  function startRep(t, side) {
+  function startRep(t) {
     rep = {
       start: t,
-      side, // strict: visibility is checked on this arm until the rep ends
       lastT: t,
       startValue: value,
       peak: value,
@@ -118,20 +90,12 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
       faultMs: {}, // how long each wrong movement was detected during this rep
       crossStreaks: {}, // blockAtTarget faults already starting when the target was crossed
       voidReason: null,
-      lastRestT, // the up phase is timed from here
-      holdMs: 0, // time at or above the target (strict: longest still stretch there)
-      holdAnchor: null, // strict: { t, lo, hi } while at the top and still
-      lastTopT: null, // the down phase is timed from here
-      trend: { dir: 'up', extreme: value }, // turning points beyond jitterDeg
-      peaks: 0,
     }
-    if (strict && !armed) voidRep('slowDown', t)
   }
 
   function voidRep(reason, t) {
     if (rep.voidReason) return
     rep.voidReason = reason
-    lastReject = reason
     say(msg('cues.notCounted', { reason: ruleMsg(reason) }), 'error', t, 2500)
   }
 
@@ -150,11 +114,6 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
     const dt = t - rep.lastT
     rep.lastT = t
     rep.peak = Math.max(rep.peak, value)
-    if (value >= target) {
-      if (strict) trackHold(t)
-      else if (rep.lastTopT != null) rep.holdMs += dt
-      rep.lastTopT = t
-    } else rep.holdAnchor = null
     if (Math.abs(value - rep.lastSample) >= deadband) {
       rep.path += Math.abs(value - rep.lastSample)
       rep.lastSample = value
@@ -168,71 +127,19 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
         if (t - faultSince[id] >= FAULT_HOLD_MS) {
           activeFaults.push(id)
           rep.faults.add(id)
-          if (rep.crossStreaks[id] === faultSince[id] || exercise.voidOn?.includes(id)) voidRep(id, t)
+          if (rep.crossStreaks[id] === faultSince[id]) voidRep(id, t)
         }
       } else {
         delete faultSince[id]
         delete rep.crossStreaks[id]
       }
     }
-
-    if (strict) trackTrend(t)
-    if (strict && value > strict.maxPeak) {
-      activeFaults.push('tooHigh')
-      voidRep('tooHigh', t)
-    }
-  }
-
-  // A hold is the arm kept still at the top, not just time spent above the target
-  // while sweeping through it.
-  function trackHold(t) {
-    const a = rep.holdAnchor
-    if (a) {
-      a.lo = Math.min(a.lo, value)
-      a.hi = Math.max(a.hi, value)
-    }
-    if (!a || a.hi - a.lo > strict.stillDeg) rep.holdAnchor = { t, lo: value, hi: value }
-    rep.holdMs = Math.max(rep.holdMs, t - rep.holdAnchor.t)
-  }
-
-  // One smooth up-and-down: a fall of more than jitterDeg is a peak; rising
-  // again by more than jitterDeg after it is a second peak (waving, bouncing).
-  function trackTrend(t) {
-    const trend = rep.trend
-    if (trend.dir === 'up') {
-      if (value > trend.extreme) trend.extreme = value
-      else if (value < trend.extreme - strict.jitterDeg) {
-        rep.peaks++
-        rep.trend = { dir: 'down', extreme: value }
-      }
-    } else if (value < trend.extreme) trend.extreme = value
-    else if (value > trend.extreme + strict.jitterDeg) {
-      voidRep('smooth', t)
-      rep.trend = { dir: 'up', extreme: value }
-    }
   }
 
   function endRep() {
     rep = null
-    armed = false
-    restAnchor = null
     activeFaults = []
     for (const id of Object.keys(faultSince)) delete faultSince[id]
-  }
-
-  function rejectRep(t) {
-    history.push({
-      set,
-      rep: null,
-      counted: false,
-      reason: rep.voidReason,
-      quality: null,
-      faults: [...rep.faults],
-      peak: Math.round(rep.peak * 10) / 10,
-      durationMs: Math.round(t - rep.start),
-    })
-    say(msg('cues.notCounted', { reason: ruleMsg(rep.voidReason) }), 'error', t, 2500)
-    endRep()
   }
 
   function completeRep(t) {
@@ -241,7 +148,20 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
 
     const main = exercise.mainFault
     if (main && (rep.faultMs[main] ?? 0) > durationMs * MAIN_FAULT_SHARE) voidRep(main, t)
-    if (rep.voidReason) return rejectRep(t)
+    if (rep.voidReason) {
+      history.push({
+        set,
+        rep: null,
+        counted: false,
+        reason: rep.voidReason,
+        quality: null,
+        faults: [...rep.faults],
+        peak: Math.round(rep.peak * 10) / 10,
+        durationMs: Math.round(durationMs),
+      })
+      say(msg('cues.notCounted', { reason: ruleMsg(rep.voidReason) }), 'error', t, 2500)
+      return endRep()
+    }
 
     // Range of motion: reaching `target` counts, reaching `ideal` scores full marks
     const rom = clamp01((rep.peak - rest) / (ideal - rest))
@@ -283,50 +203,29 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
     else say(msg(quality >= 80 ? 'cues.repGreat' : 'cues.repGood', { n: reps }), 'good', t)
   }
 
-  function trackRest(t) {
-    if (value > strict.restMax) {
-      restAnchor = null
-      return
-    }
-    lastRestT = t
-    if (restAnchor) {
-      restAnchor.lo = Math.min(restAnchor.lo, value)
-      restAnchor.hi = Math.max(restAnchor.hi, value)
-    }
-    if (!restAnchor || restAnchor.hi - restAnchor.lo > strict.stillDeg) restAnchor = { t, lo: value, hi: value }
-    if (!rep && t - restAnchor.t >= strict.restHoldMs) armed = true
-  }
-
   function stepPhase(f, t) {
-    if (strict) trackRest(t)
     if (rep) trackRep(f, t)
 
     switch (phase) {
       case 'START':
         if (value > rest + hyst) {
           phase = 'UP'
-          startRep(t, f.working)
+          startRep(t)
         }
         break
       case 'UP':
         if (value >= target) {
           phase = 'TOP'
-          rep.upMs = t - rep.lastRestT
-          if (strict && rep.upMs < strict.minUpMs) voidRep('slowDown', t)
           checkBlockAtTarget(t)
         } else if (value <= rest) {
           // Came back down without reaching the target: no rep
-          phase = 'START'
-          if (rep.voidReason && rep.peak > rest + 2 * hyst) return rejectRep(t)
           if (rep.peak > rest + 2 * hyst) say(cue('partial'), 'warn', t, 2500)
+          phase = 'START'
           endRep()
         }
         break
       case 'TOP':
-        if (value < target - hyst) {
-          phase = 'DOWN'
-          if (strict && rep.holdMs < strict.minHoldMs) voidRep('slowDown', t)
-        }
+        if (value < target - hyst) phase = 'DOWN'
         break
       case 'DOWN':
         if (value >= target) {
@@ -334,7 +233,6 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
           checkBlockAtTarget(t)
         } else if (value <= rest) {
           phase = 'START'
-          if (strict && t - rep.lastTopT < strict.minDownMs) voidRep('slowDown', t)
           completeRep(t)
         }
         break
@@ -347,7 +245,6 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
     phase = 'START'
     status = 'active'
     endRep()
-    armed = true // the rest between sets
     say(msg('cues.nextSet', { set, cue: cue('start') }), 'info', t, 2500)
   }
 
@@ -389,20 +286,6 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
       viewMismatch: view != null && view !== exercise.view,
       missing,
       activeFaults,
-      rejected: rep?.voidReason ?? null, // the rep in progress won't count, and why
-      debug: {
-        angle: value == null ? null : Math.round(value),
-        elbow: elbow == null ? null : Math.round(elbow),
-        side: rep?.side ?? null,
-        armed,
-        restMs: restAnchor ? Math.round(t - restAnchor.t) : 0,
-        upMs: rep ? Math.round(rep.upMs ?? t - rep.lastRestT) : null,
-        holdMs: rep ? Math.round(rep.holdMs) : null,
-        downMs: rep && phase === 'DOWN' && rep.lastTopT != null ? Math.round(t - rep.lastTopT) : null,
-        peak: rep ? Math.round(rep.peak) : null,
-        peaks: rep?.peaks ?? null,
-        lastReject,
-      },
       calibrationProgress:
         status === 'calibrating' && calibration ? clamp01((t - calibration.start) / CALIBRATION_MS) : 0,
       restRemainingMs: status === 'rest' ? Math.max(0, restUntil - t) : 0,
@@ -432,22 +315,6 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
     }
     view = f.view
 
-    // strict: pause while the working arm isn't seen clearly; a rep in progress is dropped
-    if (strict && status === 'active') {
-      const side = rep?.side ?? f.working
-      const seen = side ? Object.values(f.sides[side].visibility) : []
-      if (!seen.length || Math.min(...seen) < strict.minVisibility) {
-        if (rep) {
-          phase = 'START'
-          endRep()
-        }
-        activeFaults = ['stepBack']
-        return snapshot(t)
-      }
-      if (activeFaults[0] === 'stepBack') activeFaults = []
-    }
-
-    elbow = f.working ? f.sides[f.working].elbowAngle : null
     const raw = exercise.metric(f, baseline)
     if (raw == null) return snapshot(t)
     value = value == null ? raw : value + SMOOTHING * (raw - value)
@@ -467,7 +334,6 @@ export function createRepCounter(exercise, { now = () => performance.now(), rest
           calibration = null
           status = 'active'
           phase = 'START'
-          armed = true // calibration was a rest held long enough
           say(msg('cues.ready', { cue: cue('start') }), 'good', t, 2500)
         }
       }

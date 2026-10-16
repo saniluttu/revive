@@ -73,10 +73,9 @@ describe('shoulder abduction', () => {
     expect(h.feed(arm(10)).status).toBe('calibrating')
     expect(h.calibrate(arm(10)).status).toBe('active')
 
-    h.move((a) => arm(a), 10, 95, 2000)
+    h.move((a) => arm(a), 10, 95, 1500)
     expect(h.snap.phase).toBe('TOP')
-    h.feed(arm(95), 700)
-    h.move((a) => arm(a), 95, 10, 2000)
+    h.move((a) => arm(a), 95, 10, 1500)
 
     expect(h.snap.reps).toBe(1)
     expect(h.snap.lastRep.faults).toEqual([])
@@ -95,13 +94,13 @@ describe('shoulder abduction', () => {
   it('flags shoulder shrug and lowers the quality score', () => {
     const h = harness('shoulder-abduction')
     h.calibrate(arm(10))
-    h.move((a) => arm(a), 10, 95, 2000)
+    h.move((a) => arm(a), 10, 95, 1000)
     // shoulders rise by 0.04 → ear gap 0.1 → 0.06 (40% drop)
     h.move((s) => arm(95, { shrug: s }), 0, 0.04, 300)
     h.feed(arm(95, { shrug: 0.04 }), 400)
     expect(h.snap.activeFaults).toContain('shrug')
     expect(h.snap.correction.kind).toBe('error')
-    h.move((a) => arm(a), 95, 10, 2000)
+    h.move((a) => arm(a), 95, 10, 1500)
 
     expect(h.snap.reps).toBe(1)
     expect(h.snap.lastRep.faults).toContain('shrug')
@@ -119,10 +118,9 @@ describe('shoulder abduction', () => {
   it('ignores a brief one-frame glitch in form', () => {
     const h = harness('shoulder-abduction')
     h.calibrate(arm(10))
-    h.move((a) => arm(a), 10, 95, 2000)
+    h.move((a) => arm(a), 10, 95, 1000)
     h.feed(arm(95, { lean: 20 }), FRAME_MS)
-    h.feed(arm(95), 700)
-    h.move((a) => arm(a), 95, 10, 2000)
+    h.move((a) => arm(a), 95, 10, 1500)
     expect(h.snap.lastRep.faults).toEqual([])
   })
 
@@ -138,10 +136,9 @@ describe('shoulder abduction', () => {
     const h = harness('shoulder-abduction', { restMs: 5000 })
     h.calibrate(arm(10))
     const doRep = () => {
-      h.move((a) => arm(a), 10, 95, 2000)
-      h.feed(arm(95), 700)
-      h.move((a) => arm(a), 95, 10, 2000)
-      h.feed(arm(10), 700)
+      h.move((a) => arm(a), 10, 95, 1000)
+      h.move((a) => arm(a), 95, 10, 1000)
+      h.feed(arm(10), 200)
     }
     for (let i = 0; i < 10; i++) doRep()
     expect(h.snap.status).toBe('rest')
@@ -161,7 +158,7 @@ describe('shoulder abduction — shrug compensation', () => {
   const SHRUG_MSG = "Relax your shoulder, don't lift it"
 
   function lowerAndFinish(h, from = 95) {
-    h.move((a) => pose(a), from, 10, 2000)
+    h.move((a) => pose(a), from, 10, 1200)
     h.feed(pose(10), 200)
     return h.snap
   }
@@ -169,13 +166,13 @@ describe('shoulder abduction — shrug compensation', () => {
   it('a partial raise with a shrug is not inflated into a full rep', () => {
     const h = harness('shoulder-abduction')
     h.calibrate(pose(10))
-    h.move((a) => pose(a), 10, 65, 1000)
-    h.move((s) => pose(65, s), 0, SHRUG, 300)
-    h.feed(pose(65, SHRUG), 600)
-    expect(h.snap.value).toBeLessThan(75)
+    h.move((a) => pose(a), 10, 70, 1000)
+    h.move((s) => pose(70, s), 0, SHRUG, 300)
+    h.feed(pose(70, SHRUG), 600)
+    expect(h.snap.value).toBeLessThan(85)
     expect(h.snap.phase).toBe('UP')
     expect(text(h.snap.correction)).toBe(SHRUG_MSG)
-    lowerAndFinish(h, 65)
+    lowerAndFinish(h, 70)
     expect(h.snap.reps).toBe(0)
   })
 
@@ -199,7 +196,7 @@ describe('shoulder abduction — shrug compensation', () => {
   it('does not count a rep when a shrug starts right as the arm crosses the target', () => {
     const h = harness('shoulder-abduction')
     h.calibrate(pose(10))
-    h.move((a) => pose(a), 10, 62, 2000)
+    h.move((a) => pose(a), 10, 80, 1000)
     expect(h.snap.phase).toBe('UP')
     h.feed(pose(95, SHRUG)) // crosses the target on the same frame the shrug begins
     expect(h.snap.phase).toBe('TOP')
@@ -212,7 +209,7 @@ describe('shoulder abduction — shrug compensation', () => {
   it('still counts the rep (with a lower score) when a short shrug happens only after the target', () => {
     const h = harness('shoulder-abduction')
     h.calibrate(pose(10))
-    h.move((a) => pose(a), 10, 95, 2000)
+    h.move((a) => pose(a), 10, 95, 1000)
     h.feed(pose(95), 300)
     h.feed(pose(95, SHRUG), 400)
     h.feed(pose(95), 300)
@@ -226,9 +223,9 @@ describe('shoulder abduction — shrug compensation', () => {
   it('does not count a rep when the shrug is held for most of the rep', () => {
     const h = harness('shoulder-abduction')
     h.calibrate(pose(10))
-    h.move((a) => pose(a), 10, 95, 2000) // reaches the target cleanly…
-    h.feed(pose(95, SHRUG), 3000) // …then shrugs for the rest of the rep
-    h.move((a) => pose(a, SHRUG), 95, 10, 2000)
+    h.move((a) => pose(a), 10, 95, 600) // reaches the target cleanly…
+    h.feed(pose(95, SHRUG), 1500) // …then shrugs for the rest of the rep
+    h.move((a) => pose(a, SHRUG), 95, 10, 1200)
     h.feed(pose(10), 200)
     expect(h.snap.reps).toBe(0)
     expect(h.snap.lastAttempt).toMatchObject({ counted: false, reason: 'shrug' })
