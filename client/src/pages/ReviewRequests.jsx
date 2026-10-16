@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import useAuth from '../auth/useAuth.js'
 import { formatDate, STATUS_BADGE } from '../reviews/plan.js'
-import useReviews from '../reviews/useReviews.js'
+import useReviews, { useReviewsLoaded } from '../reviews/useReviews.js'
 import { listReviews, REVIEW_STATUS } from '../services/reviewService.js'
 
 function RequestRow({ review }) {
@@ -40,6 +40,7 @@ export default function ReviewRequests() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const reviews = useReviews()
+  const loaded = useReviewsLoaded()
   const pending = listReviews(reviews, { status: REVIEW_STATUS.PENDING }).reverse() // oldest first: first come, first served
   const mine = listReviews(reviews).filter((r) => r.status !== REVIEW_STATUS.PENDING && r.reviewer?.uid === user.uid)
 
@@ -49,6 +50,8 @@ export default function ReviewRequests() {
         <h1 className="text-3xl font-bold sm:text-4xl">{t('reviews.title')}</h1>
         <p className="mt-1 text-xl text-slate-600">{t('reviews.subtitle')}</p>
       </div>
+
+      {!loaded && <p className="card text-lg text-slate-500">{t('common.pleaseWait')}</p>}
 
       <div className="space-y-4">
         <h2 className="text-2xl font-bold">{t('reviews.pending', { count: pending.length })}</h2>

@@ -4,7 +4,7 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import useAuth from '../auth/useAuth.js'
 import { EXERCISES } from '../exercises/library.js'
 import { doctorName, formatDate, planExercises, STATUS_BADGE } from '../reviews/plan.js'
-import useReviews from '../reviews/useReviews.js'
+import useReviews, { useReviewsLoaded } from '../reviews/useReviews.js'
 import { approveReview, getReview, rejectReview, REVIEW_STATUS } from '../services/reviewService.js'
 
 function Section({ title, children }) {
@@ -126,11 +126,20 @@ function Outcome({ review }) {
   )
 }
 
+// Waits for the reviews to load from Firestore (e.g. after a refresh) before deciding the request is gone
 export default function ReviewDetail() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { id } = useParams()
-  const { user } = useAuth()
   const review = getReview(id, useReviews())
+  const loaded = useReviewsLoaded()
+  if (!loaded) return <p className="card text-lg text-slate-500">{t('common.pleaseWait')}</p>
+  if (!review) return <Navigate to="/reviews" replace />
+  return <ReviewEditor key={review.id} review={review} />
+}
+
+function ReviewEditor({ review }) {
+  const { t, i18n } = useTranslation()
+  const { user } = useAuth()
 
   const [mode, setMode] = useState('view') // view | edit | reject
   const [plan, setPlan] = useState(() => review?.aiPlan ?? [])
@@ -138,8 +147,6 @@ export default function ReviewDetail() {
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
-
-  if (!review) return <Navigate to="/reviews" replace />
 
   const ml = i18n.language === 'ml'
   const pick = (v) => (v ? (ml ? v.ml : v.en) || v.en || v.ml : '')

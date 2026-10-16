@@ -1,6 +1,12 @@
 // Report analysis (F3): sends the report file to the Express server, which asks
-// the AI (see server/src/routes/report.js). The latest result is kept for this
-// tab so the results page survives a refresh.
+// the AI (see server/src/routes/report.js). Each result is saved to Firestore
+// `reports/{id}` { patientUid, fileName, analysis, provider, cached, createdAt,
+// reviewRequested }; the latest is also kept for this tab so the results page
+// survives a refresh.
+
+import { doc, setDoc } from 'firebase/firestore'
+import { db } from '../lib/firebase.js'
+import { getAuthState } from './authService.js'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? ''
 const RESULT_KEY = 'revive.reportAnalysis'
@@ -115,12 +121,26 @@ export async function analyzeReport(file, { onRetry = () => {} } = {}) {
     }
   }
 
+  const reportRef = db ? doc(db, 'reports', crypto.randomUUID?.() ?? `rep_${Date.now().toString(36)}`) : null
   const result = {
-    id: crypto.randomUUID?.() ?? `rep_${Date.now().toString(36)}`, // links a physiotherapist review to this analysis
+    id: reportRef?.id ?? `rep_${Date.now().toString(36)}`, // links a physiotherapist review to this analysis
     analysis: body.analysis,
     provider: body.provider,
     cached: Boolean(body.cached),
     fileName: file.name,
+  }
+  const user = getAuthState().user
+  if (reportRef && user) {
+    // Not awaited: the patient sees the result even if saving is slow or offline (Firestore retries)
+    setDoc(reportRef, {
+      patientUid: user.uid,
+      fileName: result.fileName,
+      analysis: result.analysis,
+      provider: result.provider ?? null,
+      cached: result.cached,
+      createdAt: new Date().toISOString(),
+      reviewRequested: false,
+    }).catch((err) => console.warn('[report] could not save the report', err.code))
   }
   try {
     sessionStorage.setItem(RESULT_KEY, JSON.stringify(result))

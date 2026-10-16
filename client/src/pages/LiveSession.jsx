@@ -11,6 +11,7 @@ import { doctorName, planExercises } from '../reviews/plan.js'
 import { PlanExerciseList } from '../reviews/PlanStatus.jsx'
 import useReviews, { useSessionExercise } from '../reviews/useReviews.js'
 import { latestReviewFor, REVIEW_STATUS } from '../services/reviewService.js'
+import { saveSession, sessionSummary } from '../services/sessionService.js'
 import { preloadCues, sayCues, stopCues, stopInstructions, unlockAudio } from '../voice/cuePlayer.js'
 import { cuesForUpdate } from '../voice/cues.js'
 import InstructionSteps, { ReadAloudToggle } from '../voice/InstructionSteps.jsx'
@@ -127,7 +128,9 @@ function ExercisePicker() {
   )
 }
 
-function SessionDone({ snap, onRestart }) {
+const SAVE_TEXT = { saving: 'session.saving', saved: 'session.saved', failed: 'session.saveFailed' }
+
+function SessionDone({ snap, onRestart, saveState }) {
   const { t } = useTranslation()
   const counted = snap.history.filter((r) => r.counted)
   const notCounted = snap.history.length - counted.length
@@ -136,7 +139,17 @@ function SessionDone({ snap, onRestart }) {
   for (const r of snap.history) for (const f of r.faults) faultCounts[f] = (faultCounts[f] ?? 0) + 1
   return (
     <div className="card space-y-4">
-      <h2 className="text-3xl font-bold text-brand-800">{t('session.wellDone')}</h2>
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h2 className="text-3xl font-bold text-brand-800">{t('session.wellDone')}</h2>
+        {saveState && (
+          <span
+            role="status"
+            className={`text-lg font-semibold ${saveState === 'failed' ? 'text-red-700' : 'text-slate-500'}`}
+          >
+            {t(SAVE_TEXT[saveState])}
+          </span>
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <StatTile label={t('session.totalReps')}>{snap.totalReps}</StatTile>
         <StatTile label={t('session.sets')}>{snap.sets}</StatTile>
@@ -173,7 +186,7 @@ export default function LiveSession() {
   const { t, i18n } = useTranslation()
   const tm = useMessage()
   const [params, setParams] = useSearchParams()
-  const { exercise, planLocked, planReviewer } = useSessionExercise(params.get('exercise'), params.get('plan'))
+  const { exercise, planLocked, planReviewer, planLoading } = useSessionExercise(params.get('exercise'), params.get('plan'))
 
   const counterRef = useRef(null)
   const lastUiRef = useRef({ time: 0, attempts: 0, status: null })
@@ -191,19 +204,51 @@ export default function LiveSession() {
     instructionsOnRef.current = instructions.state !== 'idle'
   }, [instructions.state])
 
+  // Session summary (F8): saved to Firestore once the exercise is done
+  const { user } = useAuth()
+  const startedAtRef = useRef(null)
+  const [saveState, setSaveState] = useState(null) // saving | saved | failed; shown only once done
+
   const resetCounter = useCallback(() => {
     counterRef.current = exercise ? createRepCounter(exercise) : null
     prevSnapRef.current = null
+    startedAtRef.current = null
     setSnap(counterRef.current?.snapshot() ?? null)
   }, [exercise])
 
   useEffect(resetCounter, [resetCounter])
 
+  const userRef = useRef(user)
+  useEffect(() => {
+    userRef.current = user
+  })
+
+  // Called once, on the frame where the exercise is finished
+  const saveDone = useCallback((counter, final) => {
+    if (!final.history.length || !userRef.current) return
+    setSaveState('saving')
+    saveSession(
+      sessionSummary({
+        patientUid: userRef.current.uid,
+        exercise: counter.exercise,
+        snap: final,
+        startedAt: startedAtRef.current ?? Date.now(),
+      }),
+    )
+      .then(() => setSaveState('saved'))
+      .catch((err) => {
+        console.warn('[session] could not save', err.code)
+        setSaveState('failed')
+      })
+  }, [])
+
   const onFrame = useCallback((landmarks, _angles, { width, height }) => {
     const counter = counterRef.current
     if (!counter || instructionsOnRef.current) return
     const next = counter.update(landmarks, width, height)
+    if (next.status === 'active') startedAtRef.current ??= Date.now()
     const cues = cuesForUpdate(prevSnapRef.current, next, counter.exercise.id)
+    if (next.status === 'done' && prevSnapRef.current && prevSnapRef.current.status !== 'done') saveDone(counter, next)
     prevSnapRef.current = next
     if (cues && cuesOnRef.current && !assistantBusyRef.current) sayCues(cues, i18n.language)
     // Rep finished (counted or not) or status change → update immediately; otherwise throttle
@@ -213,7 +258,7 @@ export default function LiveSession() {
       lastUiRef.current = { time: now, attempts: next.attempts, status: next.status }
       setSnap(next)
     }
-  }, [i18n])
+  }, [i18n, saveDone])
 
   useEffect(() => {
     if (exercise) preloadCues(i18n.language)
@@ -306,7 +351,7 @@ export default function LiveSession() {
       )}
 
       {planLocked && <PlanLocked />}
-      {!exercise && !planLocked && <ExercisePicker />}
+      {!exercise && !planLocked && !planLoading && <ExercisePicker />}
 
       {exercise && snap && instructions.step != null && (
         <div role="status" aria-live="polite" className={`space-y-2 rounded-3xl px-5 py-4 shadow ${BANNER_STYLE.info}`}>
@@ -348,7 +393,7 @@ export default function LiveSession() {
         </div>
       )}
 
-      {exercise && snap?.status === 'done' && <SessionDone snap={snap} onRestart={resetCounter} />}
+      {exercise && snap?.status === 'done' && <SessionDone snap={snap} onRestart={resetCounter} saveState={saveState} />}
 
       <div className={`grid gap-4 ${exercise ? 'lg:grid-cols-3' : ''}`}>
         <div className="relative aspect-video overflow-hidden rounded-3xl bg-slate-900 lg:col-span-2">

@@ -38,7 +38,11 @@
     "wrongPassword": "Incorrect email or password.",
     "notLoggedIn": "You are not logged in.",
     "unknown": "Something went wrong. Please try again.",
-    "physioDetailsRequired": "Please enter your name, registration number and clinic."
+    "physioDetailsRequired": "Please enter your name, registration number and clinic.",
+    "network": "Can't connect. Check your internet and try again.",
+    "tooManyAttempts": "Too many tries. Please wait a few minutes and try again.",
+    "noProfile": "This account has no profile yet. Please sign up again or contact support.",
+    "firebaseMissing": "The app is not set up yet (Firebase settings are missing)."
   },
   "login": {
     "title": "Welcome to Revive",
@@ -274,7 +278,10 @@
     "faultCount_one": "{{message}} ({{count}} rep)",
     "faultCount_other": "{{message}} ({{count}} reps)",
     "again": "Do it again",
-    "another": "Choose another exercise"
+    "another": "Choose another exercise",
+    "saving": "Saving…",
+    "saved": "Saved ✓",
+    "saveFailed": "Couldn't save this session"
   },
   "camera": {
     "denied": "Camera permission was denied. Please allow camera access and try again.",
@@ -503,5 +510,52 @@
       "listenFirst": "Listen to the steps — counting starts when they finish.",
       "tip": "Tip: {{tip}}"
     }
+  },
+  "firebaseMissing": {
+    "title": "Revive isn't set up yet",
+    "text": "The Firebase settings for this app are missing, so login and saving can't work.",
+    "vars": "Missing in client/.env:",
+    "hint": "Copy client/.env.example to client/.env, fill in the values from Firebase console → Project settings → Your apps, then restart the dev server."
+  },
+  "link": {
+    "yourCode": "Your caregiver code",
+    "codeHint": "Share this code with a family member so they can follow your progress on their phone.",
+    "caregivers": "Following your progress",
+    "noCaregivers": "No one yet.",
+    "remove": "Remove",
+    "addPatient": "Add a family member",
+    "addPatientHint": "Enter the 6-character code shown on their Revive home screen.",
+    "codeLabel": "Caregiver code",
+    "linkButton": "Link",
+    "linked": "Linked to {{name}}.",
+    "patient": "Patient",
+    "patients": "Patients",
+    "noPatients": "You are not following anyone yet. Enter their code below.",
+    "lastSession": "Last session: {{when}}",
+    "never": "none yet",
+    "plan": "Approved exercise plan",
+    "noPlan": "No approved plan yet.",
+    "errors": {
+      "invalidCode": "Codes are 6 letters and numbers, like ABC234.",
+      "codeNotFound": "No patient has this code. Please check it and try again.",
+      "alreadyLinked": "You are already linked to this patient.",
+      "network": "Can't connect. Check your internet and try again.",
+      "unknown": "Something went wrong. Please try again."
+    }
+  },
+  "history": {
+    "empty": "No sessions yet. Finish an exercise and it will show up here.",
+    "error": "Couldn't load the sessions. Check your internet and try again.",
+    "thisWeek": "Sessions this week",
+    "repsThisWeek": "Reps this week",
+    "avgQuality": "Average quality",
+    "lastSession": "Last session",
+    "trendQuality": "Quality (0–100)",
+    "trendPain": "Pain after (0–10)",
+    "recent": "Recent sessions",
+    "repsSets": "{{reps}} reps × {{sets}} sets",
+    "quality": "Quality {{quality}}",
+    "pain": "Pain {{pain}}/10",
+    "repsInSets": "{{reps}} reps in {{sets}} sets"
   }
 }

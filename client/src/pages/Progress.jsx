@@ -1,7 +1,19 @@
 import { useTranslation } from 'react-i18next'
-import Placeholder from '../components/Placeholder.jsx'
+import useAuth from '../auth/useAuth.js'
+import SessionHistory from '../components/SessionHistory.jsx'
+import { useSessions } from '../services/useLive.js'
 
 export default function Progress() {
   const { t } = useTranslation()
-  return <Placeholder title={t('pages.progress.title')} subtitle={t('pages.progress.subtitle')} />
+  const { user } = useAuth()
+  const { data, loading, error } = useSessions(user.uid)
+  return (
+    <section className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold sm:text-4xl">{t('pages.progress.title')}</h1>
+        <p className="mt-1 text-xl text-slate-600">{t('pages.progress.subtitle')}</p>
+      </div>
+      <SessionHistory sessions={data} loading={loading} error={error} />
+    </section>
+  )
 }

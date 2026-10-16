@@ -11,16 +11,20 @@
     "prebuild": "node scripts/copy-mediapipe-wasm.js",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed": "node scripts/seed-demo.js"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.1.1",
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.2",
     "firebase": "^13.0.0",
     "i18next": "^25.10.10",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-i18next": "^15.7.4",
-    "react-router-dom": "^6.30.6"
+    "react-router-dom": "^6.30.6",
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",

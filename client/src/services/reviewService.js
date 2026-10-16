@@ -1,11 +1,15 @@
 // Physiotherapist review of an AI-suggested plan: the only module pages use for
 // review requests.
 //
-// Like authService, this implementation keeps everything in localStorage so the
-// app works without a backend (patient and physiotherapist must use the same
-// browser for now). To move to Firestore, re-implement these exports with the
-// same signatures and shapes: one `reviews/{id}` doc per request, `onSnapshot`
-// behind onReviewsChanged.
+// Firestore `reviews/{id}`, kept live with onSnapshot for whoever is logged in:
+// a patient sees their own requests, a physiotherapist sees all of them. Reads
+// are synchronous over that live state (for render); writes are async.
+// Approving also writes the patient's `plans/{patientUid}` in the same batch, so
+// a caregiver can see the approved plan.
+
+import { collection, doc, onSnapshot, query, where, writeBatch } from 'firebase/firestore'
+import { db } from '../lib/firebase.js'
+import { getAuthState, onAuthStateChanged, ROLES } from './authService.js'
 
 export const REVIEW_STATUS = {
   PENDING: 'pending',
@@ -20,7 +24,7 @@ export const REVIEW_PRICE_INR = 199 // demo only — no payment is taken
  * @typedef {{ uid: string, name: string, registrationNumber: string, clinic: string }} Reviewer
  * @typedef {{
  *   id: string, reportId: string, status: 'pending'|'approved'|'rejected',
- *   patient: { uid: string, name: string, age: number | null },
+ *   patientUid: string, patient: { uid: string, name: string, age: number | null },
  *   report: { fileName: string, diagnosis: string, severity: string, summary_en: string, summary_ml: string,
  *             affected_body_parts: string[], avoid: {en:string, ml:string}[], restrictions: {en:string, ml:string}[] },
  *   aiPlan: PlanItem[], plan: PlanItem[] | null, notes: string, rejectReason: string,
@@ -29,8 +33,6 @@ export const REVIEW_PRICE_INR = 199 // demo only — no payment is taken
  * }} Review
  */
 
-const REVIEWS_KEY = 'revive.reviews' // { [id]: Review }
-
 /** Errors carry a `code`; the UI shows i18n `review.errors.<code>`. */
 function reviewError(code) {
   const err = new Error(code)
@@ -38,34 +40,63 @@ function reviewError(code) {
   return err
 }
 
-function readAll() {
-  try {
-    return JSON.parse(localStorage.getItem(REVIEWS_KEY)) ?? {}
-  } catch {
-    return {}
+const listeners = new Set()
+// `loaded`: the first snapshot for the current user has arrived (until then `reviews` is empty
+// only because nothing has been read yet)
+let state = { reviews: {}, loaded: false }
+let loadedWaiters = []
+
+function setReviews(reviews, loaded = true) {
+  state = { reviews, loaded }
+  listeners.forEach((cb) => cb(state))
+  if (loaded) {
+    loadedWaiters.forEach((resolve) => resolve())
+    loadedWaiters = []
   }
 }
 
-const listeners = new Set()
-let state = { reviews: readAll() }
-
-function setReviews(reviews) {
-  localStorage.setItem(REVIEWS_KEY, JSON.stringify(reviews))
-  state = { reviews }
-  listeners.forEach((cb) => cb(state))
+/** Resolves once the current user's reviews have been read. */
+function whenLoaded() {
+  return state.loaded ? Promise.resolve() : new Promise((resolve) => loadedWaiters.push(resolve))
 }
 
-// Keep other tabs in sync (a request made in one tab shows up in the other)
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (e) => {
-    if (e.key !== REVIEWS_KEY) return
-    state = { reviews: readAll() }
-    listeners.forEach((cb) => cb(state))
-  })
+// ---------- live sync with Firestore, following the logged-in user ----------
+
+let watching = null // `${uid}:${role}`
+let stopWatching = null
+
+function watchFor(user) {
+  const key = user ? `${user.uid}:${user.role}` : null
+  if (key === watching) return
+  watching = key
+  stopWatching?.()
+  stopWatching = null
+  setReviews({}, false)
+  if (!user || !db) return setReviews({})
+  const reviews = collection(db, 'reviews')
+  let source
+  if (user.role === ROLES.PATIENT) source = query(reviews, where('patientUid', '==', user.uid))
+  else if (user.role === ROLES.PHYSIO) source = reviews
+  else return setReviews({}) // caregivers see the approved plan via plans/{patientUid}
+  stopWatching = onSnapshot(
+    source,
+    (snap) => setReviews(Object.fromEntries(snap.docs.map((d) => [d.id, { id: d.id, ...d.data() }]))),
+    (err) => {
+      console.warn('[reviews] live updates stopped', err.code)
+      setReviews(state.reviews)
+    },
+  )
 }
 
-function newId() {
-  return crypto.randomUUID?.() ?? `r_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`
+watchFor(getAuthState().user)
+onAuthStateChanged(({ user }) => watchFor(user))
+
+const OUR_ERRORS = ['notLoggedIn', 'notFound', 'alreadyReviewed', 'emptyPlan', 'reasonRequired']
+
+function toReviewError(err) {
+  if (OUR_ERRORS.includes(err?.code)) return err
+  console.warn('[reviews]', err?.code, err?.message)
+  return reviewError(err?.code === 'permission-denied' ? 'alreadyReviewed' : 'unknown')
 }
 
 const byNewest = (a, b) => b.createdAt.localeCompare(a.createdAt)
@@ -89,13 +120,16 @@ function cleanPlan(plan) {
  */
 export async function requestReview({ user, reportId, report, aiPlan }) {
   if (!user) throw reviewError('notLoggedIn')
+  await whenLoaded() // otherwise an existing request could be missed and made twice
   const existing = reviewForReport(user.uid, reportId)
   if (existing && existing.status !== REVIEW_STATUS.REJECTED) return existing
 
+  const ref = doc(collection(db, 'reviews'))
   const review = {
-    id: newId(),
+    id: ref.id,
     reportId,
     status: REVIEW_STATUS.PENDING,
+    patientUid: user.uid,
     patient: { uid: user.uid, name: user.profile?.name ?? user.email, age: user.profile?.age ?? null },
     report: {
       fileName: report.fileName ?? '',
@@ -116,7 +150,16 @@ export async function requestReview({ user, reportId, report, aiPlan }) {
     createdAt: new Date().toISOString(),
     reviewedAt: null,
   }
-  setReviews({ ...readAll(), [review.id]: review })
+  const { id: _id, ...data } = review
+  const batch = writeBatch(db)
+  batch.set(ref, data)
+  // Lets the physiotherapist read the full report (rules: reviewRequested == true)
+  batch.set(doc(db, 'reports', reportId), { patientUid: user.uid, reviewRequested: true }, { merge: true })
+  try {
+    await batch.commit()
+  } catch (err) {
+    throw toReviewError(err)
+  }
   return review
 }
 
@@ -125,14 +168,29 @@ function reviewerFrom(user) {
   return { uid: user.uid, name: p.name ?? '', registrationNumber: p.registrationNumber ?? '', clinic: p.clinic ?? '' }
 }
 
-function finish(id, physio, patch) {
-  const reviews = readAll()
-  const review = reviews[id]
+async function finish(id, physio, patch) {
+  const review = state.reviews[id]
   if (!review) throw reviewError('notFound')
   if (review.status !== REVIEW_STATUS.PENDING) throw reviewError('alreadyReviewed')
-  const next = { ...review, ...patch, reviewer: reviewerFrom(physio), reviewedAt: new Date().toISOString() }
-  setReviews({ ...reviews, [id]: next })
-  return next
+  const change = { ...patch, reviewer: reviewerFrom(physio), reviewedAt: new Date().toISOString() }
+  const batch = writeBatch(db)
+  batch.update(doc(db, 'reviews', id), change)
+  if (change.status === REVIEW_STATUS.APPROVED) {
+    batch.set(doc(db, 'plans', review.patientUid), {
+      patientUid: review.patientUid,
+      reviewId: id,
+      exercises: change.plan,
+      notes: change.notes,
+      reviewer: change.reviewer,
+      updatedAt: change.reviewedAt,
+    })
+  }
+  try {
+    await batch.commit()
+  } catch (err) {
+    throw toReviewError(err)
+  }
+  return { ...review, ...change }
 }
 
 /**
@@ -142,7 +200,7 @@ function finish(id, physio, patch) {
  * @param {{ plan?: PlanItem[], notes?: string }} [changes] plan defaults to the AI plan
  */
 export async function approveReview(id, physio, { plan, notes = '' } = {}) {
-  const review = readAll()[id]
+  const review = state.reviews[id]
   const finalPlan = cleanPlan(plan ?? review?.aiPlan)
   if (review && !finalPlan.length) throw reviewError('emptyPlan')
   return finish(id, physio, { status: REVIEW_STATUS.APPROVED, plan: finalPlan, notes: String(notes).trim() })
@@ -175,13 +233,13 @@ export function latestReviewFor(patientUid, reviews = state.reviews) {
 }
 
 /** The patient's most recent request for one report. */
-export function reviewForReport(patientUid, reportId, reviews = readAll()) {
+export function reviewForReport(patientUid, reportId, reviews = state.reviews) {
   return listReviews(reviews).find((r) => r.patient.uid === patientUid && r.reportId === reportId) ?? null
 }
 
 /**
  * Same object until something changes (for useSyncExternalStore).
- * @returns {{ reviews: Record<string, Review> }}
+ * @returns {{ reviews: Record<string, Review>, loaded: boolean }}
  */
 export function getReviewsState() {
   return state

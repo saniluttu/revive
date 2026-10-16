@@ -1,0 +1,121 @@
+rules_version = '2';
+
+// Revive — Firestore security rules.
+// Paste into Firebase console → Firestore Database → Rules, or deploy with
+// `firebase deploy --only firestore:rules` (see firebase.json).
+//
+//   users/{uid}           own doc only; a linked caregiver may read the patient's
+//   inviteCodes/{code}    a patient's caregiver code: read one by exact code, never list
+//   links/{cg}_{patient}  made by a caregiver with a valid code; read/removed by either side
+//   reports/{id}          patient's own; linked caregiver reads; physio reads once review is requested
+//   plans/{patientUid}    written by the physio who approves the review (same batch); read by
+//                         the patient, a linked caregiver and physios
+//   sessions/{id}         patient's own; linked caregiver reads
+//   reviews/{id}          patient creates/reads own; physios read all and approve/reject pending ones
+// Everything else is denied.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function myRole() { return get(/databases/$(database)/documents/users/$(me())).data.role; }
+    function isPatient() { return signedIn() && myRole() == 'patient'; }
+    function isCaregiver() { return signedIn() && myRole() == 'caregiver'; }
+    function isPhysio() { return signedIn() && myRole() == 'physiotherapist'; }
+
+    // An accepted caregiver link from me to this patient (link id = caregiverUid_patientUid)
+    function linkedTo(patientUid) {
+      let link = /databases/$(database)/documents/links/$(me() + '_' + patientUid);
+      return signedIn() && exists(link) && get(link).data.status == 'accepted';
+    }
+    function ownerOrLinked(patientUid) {
+      return signedIn() && (patientUid == me() || linkedTo(patientUid));
+    }
+
+    match /users/{uid} {
+      allow read: if ownerOrLinked(uid);
+      allow create: if signedIn() && uid == me()
+        && request.resource.data.role in ['patient', 'caregiver', 'physiotherapist'];
+      // The role can't be changed after signup
+      allow update: if signedIn() && uid == me()
+        && request.resource.data.role == resource.data.role;
+      allow delete: if false;
+    }
+
+    match /inviteCodes/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      // create only: writing over an existing code is an update, which is denied
+      allow create: if isPatient() && request.resource.data.patientUid == me()
+        && code.size() == 6;
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.patientUid == me();
+    }
+
+    match /links/{linkId} {
+      allow read: if signedIn()
+        && (resource.data.caregiverUid == me() || resource.data.patientUid == me());
+      allow create: if isCaregiver()
+        && request.resource.data.caregiverUid == me()
+        && linkId == me() + '_' + request.resource.data.patientUid
+        && request.resource.data.status == 'accepted'
+        && get(/databases/$(database)/documents/inviteCodes/$(request.resource.data.code)).data.patientUid
+             == request.resource.data.patientUid;
+      allow update: if false;
+      allow delete: if signedIn()
+        && (resource.data.caregiverUid == me() || resource.data.patientUid == me());
+    }
+
+    match /reports/{reportId} {
+      allow read: if signedIn() && (
+        ownerOrLinked(resource.data.patientUid)
+        || (isPhysio() && resource.data.reviewRequested == true));
+      allow create: if signedIn() && request.resource.data.patientUid == me();
+      allow update: if signedIn() && resource.data.patientUid == me()
+        && request.resource.data.patientUid == me();
+      allow delete: if signedIn() && resource.data.patientUid == me();
+    }
+
+    // The review this plan comes from, as it will be after the current batch
+    function approvedByMe(reviewId, patientUid) {
+      let review = getAfter(/databases/$(database)/documents/reviews/$(reviewId)).data;
+      return review.status == 'approved'
+        && review.patientUid == patientUid
+        && review.reviewer.uid == me();
+    }
+
+    match /plans/{patientUid} {
+      allow read: if ownerOrLinked(patientUid) || isPhysio();
+      allow create, update: if isPhysio()
+        && request.resource.data.patientUid == patientUid
+        && approvedByMe(request.resource.data.reviewId, patientUid);
+      allow delete: if false;
+    }
+
+    match /sessions/{sessionId} {
+      allow read: if signedIn() && ownerOrLinked(resource.data.patientUid);
+      allow create: if signedIn() && request.resource.data.patientUid == me();
+      allow update: if signedIn() && resource.data.patientUid == me()
+        && request.resource.data.patientUid == me();
+      allow delete: if signedIn() && resource.data.patientUid == me();
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if signedIn() && (resource.data.patientUid == me() || isPhysio());
+      allow create: if signedIn()
+        && request.resource.data.patientUid == me()
+        && request.resource.data.patient.uid == me()
+        && request.resource.data.status == 'pending'
+        && request.resource.data.reviewer == null;
+      // Only a pending request, only the review fields, signed by the reviewing physio
+      allow update: if isPhysio()
+        && resource.data.status == 'pending'
+        && request.resource.data.status in ['approved', 'rejected']
+        && request.resource.data.reviewer.uid == me()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'plan', 'notes', 'rejectReason', 'reviewer', 'reviewedAt']);
+      allow delete: if false;
+    }
+  }
+}

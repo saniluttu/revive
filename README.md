@@ -59,8 +59,9 @@ Requests to `/api/*` are proxied to the backend on port 5000.
 | `SARVAM_API_KEY` | Sarvam AI key for voice: text-to-speech, speech-to-text, cue pack |
 | `*_MODEL` | Optional model overrides |
 
-**client/.env**: `VITE_FIREBASE_*` values from Firebase console → Project settings.
-The app runs without them; Firebase features are disabled until they're set.
+**client/.env**: `VITE_FIREBASE_*` values from Firebase console → Project settings → Your apps.
+Without them the app shows a "not set up yet" screen listing what's missing. For local work
+without a project, set `VITE_FIREBASE_EMULATOR=true` and run the emulators (below).
 
 `.env` files are git-ignored. Never commit real keys.
 
@@ -120,6 +121,21 @@ The app runs without them; Firebase features are disabled until they're set.
   exercises only). Red-flag symptoms (chest pain, severe pain, numbness, swelling, a fall…) are
   caught in `server/src/voice/redFlags.js` before the AI and answered "stop and contact your
   doctor". The reply is shown and spoken.
+- **Data (Firebase):** Auth (email/password) + Firestore; nothing is kept in localStorage except
+  per-device UI choices (language, read-aloud). `authService`, `reviewService`, `reportService`,
+  `sessionService` and `linkService` (`client/src/services/`) are the only modules that talk to
+  Firebase; pages use live `onSnapshot` data, so caregiver and physiotherapist screens update on
+  other devices. Collections: `users`, `inviteCodes`, `links`, `reports`, `plans`, `sessions`,
+  `reviews` — who may read/write what is in `firestore.rules` (header comment).
+- **Firebase setup:** in the Firebase console enable **Authentication → Email/Password** and
+  create a **Firestore** database, then paste `firestore.rules` into **Firestore → Rules** and
+  publish. Demo accounts: `cd client && npm run seed` (patient `amma@revive.demo`, caregiver
+  `son@revive.demo`, physiotherapist `physio@revive.demo`, password `revive-demo` or
+  `SEED_PASSWORD`), with an approved plan, a linked caregiver and ~2 weeks of sessions.
+- **Rules + emulator tests** (needs Java): `cd firestore-tests && npm install`, then `npm test`
+  (security rules), `npm run test:app` (the client services end to end) and `npm run seed`
+  (seed script, twice). `npx firebase emulators:start --project demo-revive --only auth,firestore`
+  there + `VITE_FIREBASE_EMULATOR=true` runs the app on the emulators.
 
 ## Build status
 
