@@ -1,155 +1,126 @@
-# Revive
+# Revive — AI Avatar-Guided Home Physiotherapy
 
-AI-powered, avatar-guided home physiotherapy that speaks Malayalam and keeps the family in the loop.
-Built for **She Builds Tech 3.0 (KSUM)**. See [REQUIREMENTS.md](REQUIREMENTS.md) for the full plan.
+**She Builds Tech 3.0 · KSUM 2026**
 
-## Project structure
+Revive is a physiotherapist at home that speaks Malayalam and keeps the family in the loop.
+It reads the patient's medical report, suggests exercises for a physiotherapist to approve,
+demonstrates them with a 3D avatar, watches the patient through a webcam (no wearables),
+counts reps, corrects wrong posture in Malayalam, and lets a son or daughter monitor progress
+remotely and download a report for the doctor.
 
+---
+
+## The problem
+
+Elderly and recovering patients doing physiotherapy at home have no one to correct them.
+They do exercises wrong, compensate for pain, lose motivation, and their family — often
+working in another city — can't see whether they are improving.
+
+## Key features
+
+| Feature | What it does |
+|---|---|
+| MRI report analysis | Upload a report (PDF/photo) → AI extracts findings and suggests exercises from our library |
+| Physiotherapist approval | A licensed physio approves, edits or rejects the AI plan before exercises unlock |
+| 3D avatar | Demonstrates each exercise, with mirror mode, speed control and front/side view |
+| Live pose tracking | MediaPipe tracks 33 body points at ~30 fps, entirely on the device |
+| Rep counting + form check | Counts only full, correct reps; detects shrugging, leaning, knees caving in and more |
+| Malayalam voice | Rep counting, corrections and instructions in Malayalam; voice questions to "Ask Revive" |
+| Progress & analytics | Streak, quality trend, reps per day, pain before/after, per-exercise breakdown |
+| Caregiver dashboard | Family links via invite code, sees live progress, 24-hour missed-session alert, PDF report |
+| Bilingual UI | Full English / മലയാളം toggle |
+
+## Architecture
+
+```mermaid
+flowchart TB
+  subgraph Device["Patient device (browser) — camera video never leaves the device"]
+    A[React app<br/>roles, EN / ML]
+    B[MediaPipe pose<br/>33 points, 30 fps]
+    C[Rep counter<br/>rules, quality]
+    D[Avatar + voice<br/>Three.js, audio cues]
+  end
+  Device --> F[(Firebase<br/>Auth, Firestore, live sync)]
+  Device --> E[Node + Express API<br/>report OCR, chat, Sarvam voice]
+  E --> G
+  subgraph G["AI fallback chain — retry, cooldown, cached results"]
+    direction LR
+    O[Ollama local] --> Q[Groq] --> M[Gemini] --> R[OpenRouter]
+  end
 ```
-client/   React + Vite + Tailwind frontend (pose tracking runs in the browser)
-server/   Node + Express backend (LLM router, keeps API keys hidden)
-```
 
-## Prerequisites
+## How it works
 
-- Node.js 20+ and npm
-- A webcam (laptop or phone) for the Live Session screen
+1. **Report analysis** — PDF text is extracted with pdf.js and images with Tesseract OCR, locally.
+   The text goes to the AI with a strict JSON schema; it may only choose exercise IDs from our
+   library. Results are cached by file hash.
+2. **Human in the loop** — the AI only suggests. A physiotherapist approves or edits the plan.
+3. **Joint angles** — for three landmarks A–B–C, the angle at B is
+   `θ = arccos((BA · BC) / (|BA| |BC|))`.
+4. **Rep counting** — a state machine `START → UP → TOP → DOWN → START`; a rep counts only when
+   the target range of motion is reached and the limb returns to rest.
+5. **Form correction** — a 1.5 s calibration records the patient's own posture; deviations
+   (shrug > 20 %, trunk lean > 10°, knees caving in, etc.) must persist 250 ms before they count.
+   A rep done with the main wrong movement is not counted.
+6. **Quality score** — 40 points range of motion, 30 smoothness, 30 form.
+7. **Malayalam voice** — cues are pre-generated with Sarvam AI and played instantly from files,
+   so there are no API calls during exercise.
+8. **Resilient AI** — local Ollama → Groq → Gemini → OpenRouter, with retry, backoff and cooldown.
+
+## Tech stack
+
+- **Frontend:** React, Vite, Tailwind CSS, React Router, react-i18next
+- **Vision:** `@mediapipe/tasks-vision` (Pose Landmarker, WebAssembly)
+- **3D:** three.js, @react-three/fiber, @react-three/drei
+- **Backend:** Node.js, Express
+- **Data:** Firebase Authentication, Cloud Firestore (real-time listeners + security rules)
+- **AI:** Ollama (qwen2.5:3b), Groq, Google Gemini, OpenRouter, Sarvam AI (Malayalam TTS/STT)
+- **Documents:** pdf.js, Tesseract.js, jsPDF
 
 ## Run locally
 
-### 1. Backend (port 5000)
+Requirements: Node.js 22+, a Firebase project, and API keys (all have free tiers).
 
 ```bash
+git clone https://github.com/saniluttu/revive.git
+cd revive
+
+# Backend
 cd server
+cp .env.example .env      # fill in GEMINI / GROQ / OPENROUTER / SARVAM keys
 npm install
-cp .env.example .env   # add your Gemini / Groq / OpenRouter keys
-npm run dev
-```
+npm run voice-cues        # one-time: generate Malayalam + English voice cues
+npm run dev               # http://localhost:5000
 
-Check it's running: <http://localhost:5000/api/health>
-
-### 2. Frontend (port 5173)
-
-```bash
+# Frontend (new terminal)
 cd client
-npm install            # also copies the MediaPipe WASM into public/mediapipe
-cp .env.example .env   # optional: add Firebase web config
-npm run dev
+cp .env.example .env      # fill in VITE_FIREBASE_* values
+npm install
+npm run seed              # optional: demo patient, caregiver and physiotherapist
+npm run dev               # http://localhost:5173
 ```
 
-Open <http://localhost:5173>. The dev server listens on `0.0.0.0`, so other devices on
-the same network can use the **Network** URL printed in the terminal.
-Requests to `/api/*` are proxied to the backend on port 5000.
+Optional local model: install [Ollama](https://ollama.com), run `ollama pull qwen2.5:3b`,
+and set `OLLAMA_URL` / `OLLAMA_MODEL` in `server/.env`.
 
-> **Camera on a phone:** browsers only allow webcam access on `https://` or `localhost`.
-> To test on a phone, use a tunnel (e.g. `npx localtunnel --port 5173` or ngrok) or
-> enable Chrome's "Insecure origins treated as secure" flag for your laptop's IP.
+Publish `firestore.rules` in the Firebase console (Firestore → Rules).
 
-## Environment variables
+## Privacy & safety
 
-**server/.env**
+- Camera video is processed on the device and never uploaded.
+- Caregivers can only see patients who shared their invite code; patients can remove them anytime.
+- Revive does not diagnose or prescribe. All AI suggestions require physiotherapist approval,
+  and red-flag symptoms in chat trigger "stop and contact your doctor".
+- Form thresholds are based on standard physiotherapy guidance and are not yet clinically validated.
 
-| Variable | Description |
-|---|---|
-| `PORT` | Backend port (default 5000) |
-| `CLIENT_ORIGIN` | Allowed CORS origin(s), comma-separated |
-| `GEMINI_API_KEYS` | One or more Gemini keys, comma-separated |
-| `GROQ_API_KEYS` | One or more Groq keys, comma-separated |
-| `OPENROUTER_API_KEYS` | One or more OpenRouter keys, comma-separated |
-| `SARVAM_API_KEY` | Sarvam AI key for voice: text-to-speech, speech-to-text, cue pack |
-| `*_MODEL` | Optional model overrides |
+## Roadmap
 
-**client/.env**: `VITE_FIREBASE_*` values from Firebase console → Project settings → Your apps.
-Without them the app shows a "not set up yet" screen listing what's missing. For local work
-without a project, set `VITE_FIREBASE_EMULATOR=true` and run the emulators (below).
+- Pilot with physiotherapists to validate thresholds and set per-patient targets
+- Stricter anti-cheat counting (tempo, hold time, body stillness) — prototyped, being tuned
+- More exercises and body parts (lower back, neck)
+- Mobile app with background "Hey Revive" wake word
+- Exercise and medicine reminders, prescription assistant
 
-`.env` files are git-ignored. Never commit real keys.
+## Team
 
-## How the pieces work
-
-- **Pose tracking:** `@mediapipe/tasks-vision` Pose Landmarker runs fully in the browser
-  (`client/src/pose/`). Video never leaves the device.
-- **Rep counting:** `client/src/exercises/repCounter.js` turns each frame into one
-  range-of-motion number per exercise (`library.js`) and runs
-  `START → UP → TOP → DOWN → START`; a rep counts only if the target was reached.
-  Form rules from REQUIREMENTS.md F6 live in `rules.js`. Each rep gets a 0–100 score:
-  40 range of motion + 30 smoothness + 30 form.
-  A rep is shown as *not counted* if the exercise's main compensation (e.g. shoulder
-  shrug) is active as the target is crossed (abduction) or held for most of the rep. Run the tests with `cd client && npm test`.
-- **LLM router:** `server/src/llm/llmRouter.js` tries Gemini, Groq and OpenRouter in order
-  for each task. A key that hits a 429, timeout or 5xx cools down for 60 s and the router
-  moves to the next one. If every provider fails, it returns a cached response.
-- **Models:** every model name is an env var (`server/.env.example`). At startup
-  `server/src/llm/models.js` checks them against each provider's model list and logs what
-  it chose: OpenRouter auto-picks **free** models only (never a paid one), Groq is used for
-  report images only if it has a vision model, and a missing Gemini/Groq model is replaced
-  with a current one. A 404 at request time logs which env var to change. See the chosen
-  models at `/api/health`.
-- **Report analysis (F3):** the Report page posts the PDF/photo to `POST /api/report/analyze`
-  (`server/src/routes/report.js`). **Text first:** the server extracts the report text locally
-  (`server/src/report/extractText.js`): a PDF's text layer via pdfjs-dist, or OCR with
-  tesseract.js (eng + mal) for photos and scanned PDFs (pages rendered with @napi-rs/canvas).
-  Only that text goes to the LLM, as a `report` task: Groq `openai/gpt-oss-120b` → Gemini (retried
-  on 503/429 after 2 s and 5 s, then its fallback model) → OpenRouter free text models, all in JSON
-  mode. An invalid reply is re-asked once, then the next model is tried. The file goes to a vision
-  model only if no text could be extracted. Replies are validated in `server/src/report/analysis.js`
-  (only our body parts and exercise IDs survive). The log shows extraction method, char count and
-  which provider answered. Each good result is saved in `server/cache/` (git-ignored) by file hash:
-  the same file is answered instantly next time, and a saved answer is served if every provider
-  fails. **For the demo:** analyse the demo report once, then set `DEMO_MODE=true` so known files
-  always come from the cache. The first OCR run downloads the language data (~11 MB) into
-  `server/cache/tessdata`. Test files: `node test/helpers/write-fixtures.js <dir>`. Run the server
-  tests with `cd server && npm test`.
-- **Voice (F7, F10):** Sarvam AI behind `POST /api/tts` (`{ text, lang: ml-IN|en-IN }` → MP3,
-  `bulbul:v3`) and `POST /api/stt?lang=&provider=sarvam|groq` (raw audio → `{ text }`, `saaras:v4`,
-  Groq Whisper as the second server engine). If TTS fails the browser's `speechSynthesis` speaks.
-  Speech-to-text order: Sarvam → the browser's Web Speech transcript (recorded alongside) →
-  Groq Whisper. **Cue pack:** `cd server && npm run voice-cues` pre-generates every Live Session
-  cue (rep numbers 1–20, one correction per form rule, well done, rest, set complete, not counted,
-  go higher) and each exercise's intro, steps and tip — Malayalam first, then English — into
-  `client/public/audio/{ml,en}/` + `manifest.json`, from the text in `en.json` / `ml.json`. Built for
-  Sarvam's free-tier rate limit: one request at a time (`VOICE_CUE_DELAY_MS`, default 1500 ms); on 429
-  it waits Retry-After or 15 s → 30 s → 60 s, up to 5 tries, then moves on; files already there are
-  skipped, so **if the summary lists failures, just run it again** (`--force` regenerates everything;
-  reworded cues are redone automatically). Commit `client/public/audio` afterwards, and restart `npm run dev` (Vite
-  only serves public files that existed when it started). The session plays the pack from memory,
-  in the UI language, with a 3 s cooldown per cue. A cue missing from the pack is fetched once from
-  Sarvam (`/api/tts`) when the page opens and cached in IndexedDB; only English ever falls back to
-  the browser's `speechSynthesis` (Windows has no Malayalam voice). The console logs where every cue
-  played from (`[voice] ▶ ml/rep-3 ← pack file …`).
-- **Read-aloud instructions:** the pack also holds each exercise's intro (name + setup), steps
-  and key tip. The exercise cards and Live Session have *Listen to instructions* / Pause / Stop,
-  highlighting the step being read (`useInstructions` exposes `step` for the 3D avatar to follow).
-  With *Read instructions aloud* on (default, remembered per device), Start camera reads the steps
-  first and counting begins when they finish; picking a body part reads its first exercise.
-  Between sets the exercise's tip is repeated after "set complete, rest".
-- **Voice questions (F10):** the mic on Home and Live Session records → speech-to-text →
-  `POST /api/chat` (llmRouter `chat` task; knows the current exercise and the approved plan;
-  exercises only). Red-flag symptoms (chest pain, severe pain, numbness, swelling, a fall…) are
-  caught in `server/src/voice/redFlags.js` before the AI and answered "stop and contact your
-  doctor". The reply is shown and spoken.
-- **Data (Firebase):** Auth (email/password) + Firestore; nothing is kept in localStorage except
-  per-device UI choices (language, read-aloud). `authService`, `reviewService`, `reportService`,
-  `sessionService` and `linkService` (`client/src/services/`) are the only modules that talk to
-  Firebase; pages use live `onSnapshot` data, so caregiver and physiotherapist screens update on
-  other devices. A login lasts for the browser tab (`VITE_FIREBASE_REMEMBER_LOGIN=true` to stay
-  logged in); the login page never shows a logged-in person's data, and Logout reloads the app so
-  nothing of the previous user stays in memory. Collections: `users`, `inviteCodes`, `links`, `reports`, `plans`, `sessions`,
-  `reviews` — who may read/write what is in `firestore.rules` (header comment).
-- **Firebase setup:** in the Firebase console enable **Authentication → Email/Password** and
-  create a **Firestore** database, then paste `firestore.rules` into **Firestore → Rules** and
-  publish. Demo accounts: `cd client && npm run seed` (patient `amma@revive.demo`, caregiver
-  `son@revive.demo`, physiotherapist `physio@revive.demo`, password `revive-demo` or
-  `SEED_PASSWORD`), with an approved plan, a linked caregiver and ~2 weeks of sessions.
-- **Rules + emulator tests** (needs Java): `cd firestore-tests && npm install`, then `npm test`
-  (security rules), `npm run test:app` (the client services end to end) and `npm run seed`
-  (seed script, twice). `npx firebase emulators:start --project demo-revive --only auth,firestore`
-  there + `VITE_FIREBASE_EMULATOR=true` runs the app on the emulators.
-
-## Build status
-
-- [x] Phase 1: Setup (client, server, Firebase config, LLM router skeleton)
-- [x] Phase 2: Auth & profile (local authService; Firebase Auth swap pending)
-- [x] Phase 3: Pose core (skeleton overlay + live joint angles)
-- [x] Phase 4: Exercise library, body-part selection, rep counting + form rules + quality score
-- [ ] Phases 5–13: see REQUIREMENTS.md §9
+Built during She Builds Tech 3.0 at Kerala Startup Mission, Kalamassery.
